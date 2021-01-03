@@ -1,0 +1,8 @@
+tensorflow==2.1.0
+tensorflow-addons==0.8.3
+tensorflow_graphics==2020.5.20
+tqdm
+trimesh==3.*
+pyvista==0.24.*
+pydot
+graphviz

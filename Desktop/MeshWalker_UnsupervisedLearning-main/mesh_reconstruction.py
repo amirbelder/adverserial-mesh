@@ -19,8 +19,8 @@ import utils
 import dataset
 import dataset_prepare
 
-N_ITERS = 10000
-DUMP_IMAGES = 10
+N_ITERS = 100000
+DUMP_IMAGES = 100
 DUMP_PATH = os.path.expanduser('~') + '/mesh_walker/mesh_reconstruction/'
 
 
@@ -91,6 +91,8 @@ def mesh_reconstruction(logdir, dataset_folder):
   dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, 3, model_fn,
                                    model_must_be_load=True, dump_model_visualization=False)
 
+  #Amir
+  # Here I can put the right npz file that holds a mesh with a source Domain mesh
   npz_fn = os.path.expanduser('~') + '/mesh_walker/datasets_processed/shrec11/16-04_a/test/T10_not_changed_500.npz'
   if 0:
     orig_mesh_data = np.load(npz_fn, encoding='latin1', allow_pickle=True)

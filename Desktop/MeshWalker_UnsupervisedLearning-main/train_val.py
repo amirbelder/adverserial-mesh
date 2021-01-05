@@ -12,6 +12,8 @@ import dataset
 import utils
 import params_setting
 
+recon_train = True
+
 def print_enters(to_print):
   print("\n\n\n\n")
   print(to_print)
@@ -160,8 +162,13 @@ def train_val(params):
       labels = labels[:, skip + 1:]
     best_pred = tf.math.argmax(predictions, axis=-1)
     test_accuracy(labels, predictions)
-    confusion = tf.math.confusion_matrix(labels=tf.reshape(labels, (-1,)), predictions=tf.reshape(best_pred, (-1,)),
-                                         num_classes=params.n_classes)
+    confusion = None
+    #Amir
+    # the confusion had to recive zero label, that's a problem
+    # So for now I'm skipping this part if we are just doing reconstruction
+    if recon_train == False:
+      confusion = tf.math.confusion_matrix(labels=tf.reshape(labels, (-1,)), predictions=tf.reshape(best_pred, (-1,)),
+                                           num_classes=params.n_classes)
 
     return confusion
   # -------------------------------------
@@ -245,11 +252,13 @@ def train_val(params):
           if n_test_iters > params.n_models_per_test_epoch:
             break
           confusion = test_step(model_ftrs, labels, one_label_per_model=one_label_per_model)
-          dataset_type = utils.get_dataset_type_from_name(name)
-          if dataset_type in all_confusion.keys():
-            all_confusion[dataset_type] += confusion
-          else:
-            all_confusion[dataset_type] = confusion
+          # Amir - added the case that confusion is none as a result of recon training
+          if confusion is not None:
+            dataset_type = utils.get_dataset_type_from_name(name)
+            if dataset_type in all_confusion.keys():
+              all_confusion[dataset_type] += confusion
+            else:
+              all_confusion[dataset_type] = confusion
         # Dump test info to tensorboard
         if accrcy_smoothed is None:
           accrcy_smoothed = test_accuracy.result()
@@ -291,6 +300,9 @@ def run_one_job(job, job_part, network_task):
     params.classes_indices_to_use = [*range(30)]
     # Amir - If I ever want to run only on 2 classes - this is something I should do
     #params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
+    if recon_train == True:
+      params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
+      params.classes_indices_to_use = list([15, 25]) #(params.classes_indices_to_use[15],params.classes_indices_to_use[25]) # [15, 25]  # 15 - horse, 25 - camel
     params.n_classes = len(params.classes_indices_to_use)
 
   train_val(params)

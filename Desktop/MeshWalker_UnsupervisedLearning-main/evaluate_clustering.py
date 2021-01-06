@@ -18,6 +18,7 @@ import utils
 import dataset
 import dataset_prepare
 
+recon_training = True
 timelog = {}
 timelog['prep_model'] = []
 timelog['fill_features'] = []
@@ -56,6 +57,9 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
   np.random.seed(1)
   tf.random.set_seed(0)
   classes2use = None #['desk', 'dresser', 'table', 'laptop', 'lamp', 'stool', 'wardrobe'] # or "None" for all
+  # Amir
+  if recon_training == True:
+    classes2use = [15, 25]
   print_details = verbose_level >= 2
   if params is None:
     with open(logdir + '/params.txt') as fp:
@@ -89,7 +93,6 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
     params.layer_sizes = None
     params.aditional_network_params = []
 
-  params.classes_indices_to_use = None
   if seq_len:
     params.seq_len = seq_len
   if verbose_level:
@@ -101,7 +104,7 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
   params.set_seq_len_by_n_faces = 1
   if dataset_folder:
     size_limit = np.inf # 200
-    params.classes_indices_to_use = classes_indices_to_use
+    params.classes_indices_to_use = classes2use
     pathname_expansion = dataset_folder
     if 1:
       test_dataset, n_models_to_test = dataset.tf_mesh_dataset(params, pathname_expansion, mode=params.network_task,

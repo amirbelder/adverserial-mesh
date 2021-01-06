@@ -96,7 +96,7 @@ def calc_accuracy_test(dataset_expansion=False, logdir=None, labels=None, iter2u
 
 
 if __name__ == '__main__':
-  from train_val import get_params
+  #from train_val import get_params
   utils.config_gpu(True)
   np.random.seed(0)
   tf.random.set_seed(0)

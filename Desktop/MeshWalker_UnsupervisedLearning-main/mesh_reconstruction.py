@@ -23,6 +23,7 @@ N_ITERS = 100000
 DUMP_IMAGES = 100
 DUMP_PATH = os.path.expanduser('~') + '/mesh_walker/mesh_reconstruction/'
 
+use_sphere_or_model = "model"
 
 def generate_sphere():
   sphere = trimesh.primitives.Sphere()
@@ -93,12 +94,14 @@ def mesh_reconstruction(logdir, dataset_folder):
 
   #Amir
   # Here I can put the right npz file that holds a mesh with a source Domain mesh
-  npz_fn = os.path.expanduser('~') + '/mesh_walker/datasets_processed/shrec11/16-04_a/test/T10_not_changed_500.npz'
-  if 0:
+  npz_fn = "datasets_processed/shrec11/16-04_a/train/T187_not_changed_500.npz"
+  #os.path.expanduser('~') + '/mesh_walker/datasets_processed/shrec11/16-04_a/test/T10_not_changed_500.npz'
+  if use_sphere_or_model == "model":
     orig_mesh_data = np.load(npz_fn, encoding='latin1', allow_pickle=True)
     mesh_data = {k: v for k, v in orig_mesh_data.items()}
     #mesh_data['vertices'] += np.random.normal(size=mesh_data['vertices'].shape) * .02
-  else:
+
+  elif use_sphere_or_model == "sphere":
     mesh_data = generate_sphere()
 
   #utils.visualize_model(orig_mesh_data['vertices'], orig_mesh_data['faces'])

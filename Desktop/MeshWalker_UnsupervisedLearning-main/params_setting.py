@@ -75,7 +75,7 @@ def set_up_default_params(network_task, run_name, cont_run_number=0):
   # Other params
   params.log_freq = 100
   params.walk_alg = 'random_global_jumps'   # no_repeat / no_jumps / fast / fastest / only_jumps / local_jumps / no_local_jumps
-  params.net_input = ['dxdydz'] # 'xyz', 'dxdydz', 'jump_indication'
+  params.net_input = ['xyz'] # 'xyz', 'dxdydz', 'jump_indication'
   params.reverse_walk = False
   params.train_min_max_faces2use = [0, np.inf]
   params.test_min_max_faces2use = [0, np.inf]

@@ -13,6 +13,7 @@ from dataset_prepare import shrec11_labels, model_net_labels
 #import dnn_cad_seq
 import evaluate_clustering
 import evaluate_segmentation
+import evaluate_classification
 
 SEGMENTATION_COLORMAP = np.array(
   ((165, 242, 12), (89, 12, 89), (165, 89, 165), (242, 242, 165),

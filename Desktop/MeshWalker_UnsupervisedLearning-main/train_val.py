@@ -11,7 +11,9 @@ import rnn_model
 import dataset
 import utils
 import params_setting
-
+# Amir
+generate_cav_file2label = False
+import split_data_classes_folders
 recon_train = True
 
 def print_enters(to_print):
@@ -40,6 +42,13 @@ def train_val(params):
                                                               max_size_per_class=params.train_max_size_per_class,
                                                               min_dataset_size=128,
                                                               data_augmentation=params.train_data_augmentation)
+    #Amir
+    if generate_cav_file2label == True:
+      if generate_cav_file2label == True:
+        split_data_classes_folders.tf_mesh_dataset(params, params.datasets2use['train'][i],
+                                                   min_max_faces2use=params.train_min_max_faces2use,
+                                                   data_augmentation=params.train_data_augmentation, name="train")
+
     # End
     print('Train Dataset size:', n_trn_items)
     train_ds_iters.append(iter(this_train_dataset.repeat()))
@@ -59,6 +68,12 @@ def train_val(params):
                                                         shuffle_size=100,
                                                         min_max_faces2use=params.test_min_max_faces2use)
     test_ds_iter = iter(test_dataset.repeat())
+    # Amir
+    if generate_cav_file2label == True:
+      split_data_classes_folders.tf_mesh_dataset(params, params.datasets2use['train'][i],
+                                                 min_max_faces2use=params.train_min_max_faces2use,
+                                                 data_augmentation=params.train_data_augmentation, name = "test")
+
     # End
   print(' Test Dataset size:', n_tst_items)
 
@@ -303,7 +318,7 @@ def run_one_job(job, job_part, network_task):
     if recon_train == True:
       params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
       params.classes_indices_to_use = list([15, 25]) #(params.classes_indices_to_use[15],params.classes_indices_to_use[25]) # [15, 25]  # 15 - horse, 25 - camel
-    params.n_classes = len(params.classes_indices_to_use)
+    #params.n_classes = len(params.classes_indices_to_use)
 
   train_val(params)
 

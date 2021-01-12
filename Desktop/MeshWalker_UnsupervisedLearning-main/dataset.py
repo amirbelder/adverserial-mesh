@@ -261,6 +261,7 @@ def mesh_data_to_walk_features(mesh_data, dataset_params):
 
   # Get essential data from file
   if dataset_params.label_per_step:
+    print("mesh_data['labels']", mesh_data['labels'])
     mesh_labels = mesh_data['labels']
   else:
     mesh_labels = -1 * np.ones((vertices.shape[0],))
@@ -308,6 +309,7 @@ def mesh_data_to_walk_features(mesh_data, dataset_params):
     for fill_ftr_fun in dataset_params.fill_features_functions:
       f_idx = fill_ftr_fun(features[walk_id], f_idx, vertices, mesh_extra, seq, jumps, seq_len)
     if dataset_params.label_per_step:
+      print("mesh labels shape: ", mesh_labels.shape)
       if dataset_params.network_task == 'self:triplets':
         labels[walk_id] = seq[1:seq_len + 1]
       else:

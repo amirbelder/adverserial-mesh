@@ -1,14 +1,15 @@
 
 #General Info
-result_path: 'home/amir/mesh_walker/mesh_reconstruction/'
+result_path: '../../mesh_walker/mesh_reconstruction/'
 trained_model: '../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/'
 dataset_path: 'datasets_processed/shrec11/16-04_a/test/*.npz'
+
 
 #Training params
 learning_weight: 0.01
 max_label_diff: 0.1
 max_iter: 100_000
-
+iter_2_change_weight: 1_000
 
 
 # Experiment params
@@ -16,10 +17,12 @@ use_sphere_or_model: 'model'
 mesh_path: 'datasets_processed/shrec11/16-04_a/train/T187_not_changed_500.npz' #This is a camel
 target_label: 15
 source_label: 25
+trained_only_2_classes: True
+
 
 #Attack params 
-loss: ''
-attack:
+loss: 'sparse_categorical_crossentropy'
+attack: 'none'
 
 
 # logger options

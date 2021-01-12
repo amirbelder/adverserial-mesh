@@ -98,6 +98,9 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
   if verbose_level:
     print('params.seq_len:', params.seq_len, ' ; n_walks_per_model:', n_walks_per_model)
 
+  #Amir - check 800 after training over 200
+  params.seq_len = 800
+
   if SHOW_WALK:
     params.net_input += ['vertex_indices']
 
@@ -590,7 +593,7 @@ if __name__ == '__main__':
       dataset_path = data_path + curr_dataset_path
       print("dataset_path=", dataset_path, "\n\n")
 
-      cls2show = None
+      cls2show = [15, 25]#None
 
       acc, _ = calc_accuracy_test(logdir=logdir,
                                   dataset_folder=dataset_path, classes_indices_to_use=cls2show, labels=dataset_prepare.shrec11_labels, iter2use=iter2use,

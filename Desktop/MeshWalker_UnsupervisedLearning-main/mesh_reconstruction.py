@@ -13,6 +13,7 @@ import pylab as plt
 from sklearn.manifold import TSNE
 from sklearn.decomposition import KernelPCA
 from tqdm import tqdm
+import yaml
 
 import rnn_model
 import utils
@@ -76,7 +77,6 @@ def calc_ftr_vector(params, dnn_model, npz_fn):
 
 def set_hyper_params():
   #move all to a yaml file?
-  hyper_params = {}
   learning_weight = 0.01
   max_label_diff = 0.1
   max_iter = 10000
@@ -93,6 +93,10 @@ def set_hyper_params():
 
   use_sphere_or_model = "model"
 
+  hyper_params = {'learning_weight': learning_weight, 'max_label_diff' : max_label_diff, 'max_iter': max_iter,
+                  'target_label': target_label, 'source_label' : source_label, 'dump_images_every': DUMP_IMAGES,
+                  'res_path': DUMP_PATH}
+  return hyper_params
 def mesh_reconstruction(logdir, dataset_folder):
   with open(logdir + '/params.txt') as fp:
     params = EasyDict(json.load(fp))
@@ -177,13 +181,10 @@ def main():
   classes_indices_to_use = None
   model_fn = None
 
-<<<<<<< HEAD
+
   logdir = "../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/" #'/home/alonla/mesh_walker/runs_aug_360_must/0004-11.09.2020..04.35__shrec11_16-04_A'
   dataset_path = 'datasets_processed/shrec11/16-04_a/test/*.npz' #os.path.expanduser('~') + '/mesh_walker/datasets_processed/shrec11/16-04_a/test/*.npz'
-=======
-  logdir = "../../mesh_walker/runs_aug_360_must/0048-30.12.2020..17.19__shrec11_16-04_a"  # '/home/alonla/mesh_walker/runs_aug_360_must/0004-11.09.2020..04.35__shrec11_16-04_A'
-  dataset_path = 'datasets_processed/shrec11/16-04_a/test/*.npz'  # os.path.expanduser('~') + '/mesh_walker/datasets_processed/shrec11/16-04_a/test/*.npz'
->>>>>>> 7337e131b97494242dfa1fa2d6d51862e37718c3
+
   if 0:
     acc, _ = evaluate_classification.calc_accuracy_test(logdir=logdir,
                                                         dataset_folder=dataset_path,

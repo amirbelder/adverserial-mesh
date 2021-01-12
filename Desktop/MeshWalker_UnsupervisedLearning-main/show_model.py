@@ -21,6 +21,8 @@ def load_model_from_npz(npz_path):
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         npz_path = sys.argv[1]
+    elif len(sys.argv) == 1:
+        npz_path = 'datasets_processed/shrec11/16-04_a/train/T187_not_changed_500.npz'
     else:
         print("Error: Please provide .npz file path as an argument !")
         exit(0)

@@ -54,6 +54,7 @@ def set_up_default_params(network_task, run_name, cont_run_number=0):
   params.features_extraction = False
   if params.network_task == 'classification':
     params.n_walks_per_model = 1
+    # Amir - changed to False to see what happens
     params.one_label_per_model = True
     params.train_loss = ['cros_entr']
   elif params.network_task == 'semantic_segmentation':

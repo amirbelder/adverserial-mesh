@@ -20,6 +20,7 @@ import rnn_model
 import utils
 import dataset
 import dataset_prepare
+import evaluate_clustering
 
 
 def generate_sphere():
@@ -78,7 +79,7 @@ def mesh_reconstruction(config):
     params = EasyDict(json.load(fp))
   model_fn = tf.train.latest_checkpoint(config['trained_model'])
   params.batch_size = 1
-  #params.seq_len = 400
+  params.seq_len = 800
   params.n_walks_per_model = 1
   params.set_seq_len_by_n_faces = False
   params.data_augmentaion_vertices_functions = []
@@ -115,25 +116,57 @@ def mesh_reconstruction(config):
   l = []
   cpos = None
   w = config['learning_weight']
+  teta = config['max_label_diff']
   for num_iter in range(config['max_iter']):
-    if num_iter == int(config['max_iter'] / 2):
-      w = w / 1.5
-    features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
 
+    features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
     ftrs = tf.cast(features[:, :, :3], tf.float32)
     v_indices = features[0, :, 3].astype(np.int)
 
     with tf.GradientTape() as tape:
       tape.watch(ftrs)
       pred = dnn_model(ftrs, classify=True, training=False)
-      #loss = w * tf.keras.losses.sparse_categorical_crossentropy(target_label, pred)    # 18 = two_balls , 15 - horse
-      loss = w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
+      if config['attack'] == 'sparse_categorical_crossentropy':
+        loss = -w * tf.keras.losses.sparse_categorical_crossentropy(target_feature_vector, pred[0])    # 18 = two_balls , 15 - horse
+      else: # default
+        loss = -w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
+        #print(pred[0])
+    if num_iter == 0:
+      prev_target_pred = (pred[0].numpy())[config['target_label']]
+      prev_source_pred = (pred[0].numpy())[config['source_label']]
 
-    gradients = tape.gradient(loss, ftrs)
-    print(num_iter, loss.numpy(), np.argmax(pred))
+    attack = loss
+
+    #if tf.abs(tf.math.unsorted_segment_sum(tf.math.subtract(last_pred, pred[0]))) > teta:
+    #   attack * = teta
+
+    # If we got this walk right, we might not want to upate this part
+    if np.argmax(pred) == config['target_label']:
+      continue
+
+    # Check to see that we didn't update too much
+    # this is: pred(source_label) - pred(target_label)
+    #last_pred_diff = (pred[0].numpy())[config['source_label']] - (pred[0].numpy())[config['target_label']]
+
+    target_pred = (pred[0].numpy())[config['target_label']]
+    source_pred = (pred[0].numpy())[config['source_label']]
+    if abs(prev_target_pred - target_pred) > teta:
+      w /= 10
+
+    if abs(prev_source_pred - source_pred) > teta:
+      w /= 10
+
+    if num_iter % config['iter_2_change_weight'] == 0:
+      w *= 10
+
+    gradients = tape.gradient(attack, ftrs)
+    print(num_iter, attack.numpy(), np.argmax(pred))
     l.append(loss.numpy())
 
     mesh_data['vertices'][v_indices[skip:]] -= gradients[0][skip:].numpy()
+    # Updating the last prediction
+    prev_target_pred = target_pred
+    prev_source_pred = source_pred
 
     if num_iter % config['image_save_iter'] == 0:
       cpos = dump_mesh(mesh_data, config['result_path'], cpos, num_iter)
@@ -146,11 +179,26 @@ def mesh_reconstruction(config):
   res_path = config['result_path']
   cmd = f'ffmpeg -framerate 24 -i {res_path}img_%05d.jpg {res_path}mesh_reconstruction.mp4'
   os.system(cmd)
+  return
 
 def get_config(config):
   with open(config, 'r') as stream:
     return yaml.safe_load(stream)
 
+def check_model_accuracy():
+  iter2use = 'last'
+  classes_indices_to_use = None
+  model_fn = None
+
+  logdir = "../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/"  # '/home/alonla/mesh_walker/runs_aug_360_must/0004-11.09.2020..04.35__shrec11_16-04_A'
+  dataset_path = 'datasets_processed/shrec11/16-04_a/test/*.npz'  # os.path.expanduser('~') + '/mesh_walker/datasets_processed/shrec11/16-04_a/test/*.npz'
+
+
+  acc, _ = evaluate_clustering.calc_accuracy_test(logdir=logdir,
+                                                        dataset_folder=dataset_path,
+                                                        labels=dataset_prepare.shrec11_labels, iter2use=iter2use,
+                                                        n_walks_per_model=8)
+  return
 
 def main():
   np.random.seed(0)
@@ -162,22 +210,8 @@ def main():
   opts = parser.parse_args()
   config = get_config(opts.config)
 
-  iter2use = 'last'
-  classes_indices_to_use = None
-  model_fn = None
-
-
-  logdir = "../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/" #'/home/alonla/mesh_walker/runs_aug_360_must/0004-11.09.2020..04.35__shrec11_16-04_A'
-  dataset_path = 'datasets_processed/shrec11/16-04_a/test/*.npz' #os.path.expanduser('~') + '/mesh_walker/datasets_processed/shrec11/16-04_a/test/*.npz'
-
-  if 0:
-    acc, _ = evaluate_classification.calc_accuracy_test(logdir=logdir,
-                                                        dataset_folder=dataset_path,
-                                                        labels=dataset_prepare.shrec11_labels, iter2use=iter2use,
-                                                        n_walks_per_model=8)
-    print(acc)
-  else:
-    mesh_reconstruction(config)
+  #check_model_accuracy()
+  mesh_reconstruction(config)
 
   return 0
 

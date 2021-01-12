@@ -352,7 +352,7 @@ if __name__ == '__main__':
   job_part = '16-04_a'
 
   # choose network task from: 'features_extraction', 'unsupervised_classification', 'semantic_segmentation', 'classification'
-  network_task = 'classification'
+  network_task = 'segmentation' #'classification'
 
   if len(sys.argv) > 1:
     job = sys.argv[1].lower()

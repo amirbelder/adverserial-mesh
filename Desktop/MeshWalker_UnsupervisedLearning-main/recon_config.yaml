@@ -1,0 +1,31 @@
+
+#General Info
+result_path: 'home/amir/mesh_walker/mesh_reconstruction/'
+trained_model: '../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/'
+dataset_path: 'datasets_processed/shrec11/16-04_a/test/*.npz'
+
+#Training params
+learning_weight: 0.01
+max_label_diff: 0.1
+max_iter: 100_000
+
+
+
+# Experiment params
+use_sphere_or_model: 'model'
+mesh_path: 'datasets_processed/shrec11/16-04_a/train/T187_not_changed_500.npz' #This is a camel
+target_label: 15
+source_label: 25
+
+#Attack params 
+loss: ''
+attack:
+
+
+# logger options
+image_save_iter:  100       # How often do you want to save output images during training
+image_display_iter: 100       # How often do you want to display output images during training
+display_size: 15              # How many images do you want to display each time
+snapshot_save_iter: 10_000    # How often do you want to save trained models
+log_iter: 1                   # How often do you want to log the training stats
+

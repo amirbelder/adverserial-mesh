@@ -74,7 +74,6 @@ def calc_ftr_vector(params, dnn_model, npz_fn):
 
   return feature_vector
 
-
 def set_hyper_params():
   #move all to a yaml file?
   hyper_params = {}
@@ -84,9 +83,9 @@ def set_hyper_params():
   target_label = 15
   source_label = 25
   iter_count = 0
-  loss
-  attack
-  mesh
+  #loss =
+  #attack
+  #mesh
   last_pred = -1
   N_ITERS = 100000
   DUMP_IMAGES = 100
@@ -170,7 +169,7 @@ def mesh_reconstruction(logdir, dataset_folder):
   os.system(cmd)
 
 
-if __name__ == '__main__':
+def main():
   np.random.seed(0)
   utils.config_gpu(1)
 
@@ -178,12 +177,23 @@ if __name__ == '__main__':
   classes_indices_to_use = None
   model_fn = None
 
+<<<<<<< HEAD
   logdir = "../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/" #'/home/alonla/mesh_walker/runs_aug_360_must/0004-11.09.2020..04.35__shrec11_16-04_A'
   dataset_path = 'datasets_processed/shrec11/16-04_a/test/*.npz' #os.path.expanduser('~') + '/mesh_walker/datasets_processed/shrec11/16-04_a/test/*.npz'
+=======
+  logdir = "../../mesh_walker/runs_aug_360_must/0048-30.12.2020..17.19__shrec11_16-04_a"  # '/home/alonla/mesh_walker/runs_aug_360_must/0004-11.09.2020..04.35__shrec11_16-04_A'
+  dataset_path = 'datasets_processed/shrec11/16-04_a/test/*.npz'  # os.path.expanduser('~') + '/mesh_walker/datasets_processed/shrec11/16-04_a/test/*.npz'
+>>>>>>> 7337e131b97494242dfa1fa2d6d51862e37718c3
   if 0:
     acc, _ = evaluate_classification.calc_accuracy_test(logdir=logdir,
-                                dataset_folder=dataset_path, labels=dataset_prepare.shrec11_labels, iter2use=iter2use,
-                                n_walks_per_model=8)
+                                                        dataset_folder=dataset_path,
+                                                        labels=dataset_prepare.shrec11_labels, iter2use=iter2use,
+                                                        n_walks_per_model=8)
     print(acc)
   else:
     mesh_reconstruction(logdir=logdir, dataset_folder=dataset_path)
+
+  return 0
+
+if __name__ == '__main__':
+  main()

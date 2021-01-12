@@ -23,7 +23,7 @@ N_ITERS = 100000
 DUMP_IMAGES = 100
 DUMP_PATH = os.path.expanduser('~') + '/mesh_walker/mesh_reconstruction/'
 
-use_sphere_or_model = "model"
+use_sphere_or_model = "sphere" #"model"
 
 def generate_sphere():
   sphere = trimesh.primitives.Sphere()
@@ -74,6 +74,26 @@ def calc_ftr_vector(params, dnn_model, npz_fn):
 
   return feature_vector
 
+
+def set_hyper_params():
+  #move all to a yaml file?
+  hyper_params = {}
+  learning_weight = 0.01
+  max_label_diff = 0.1
+  max_iter = 10000
+  target_label = 15
+  source_label = 25
+  iter_count = 0
+  loss
+  attack
+  mesh
+  last_pred = -1
+  N_ITERS = 100000
+  DUMP_IMAGES = 100
+  DUMP_PATH = os.path.expanduser('~') + '/mesh_walker/mesh_reconstruction/'
+
+  use_sphere_or_model = "model"
+
 def mesh_reconstruction(logdir, dataset_folder):
   with open(logdir + '/params.txt') as fp:
     params = EasyDict(json.load(fp))
@@ -117,7 +137,7 @@ def mesh_reconstruction(logdir, dataset_folder):
 
   l = []
   cpos = None
-  w = 4
+  w = 0.04
   for n in range(N_ITERS):
     if n == int(N_ITERS / 2):
       w = w / 1.5
@@ -130,7 +150,8 @@ def mesh_reconstruction(logdir, dataset_folder):
       tape.watch(ftrs)
       pred = dnn_model(ftrs, classify=True, training=False)
       #loss = w * tf.keras.losses.sparse_categorical_crossentropy(target_label, pred)    # 18 = two_balls , 15 - horse
-      loss = 100 * w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
+      loss = w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
+
     gradients = tape.gradient(loss, ftrs)
     print(n, loss.numpy(), np.argmax(pred))
     l.append(loss.numpy())
@@ -157,7 +178,7 @@ if __name__ == '__main__':
   classes_indices_to_use = None
   model_fn = None
 
-  logdir = "../../mesh_walker/runs_aug_360_must/0048-30.12.2020..17.19__shrec11_16-04_a" #'/home/alonla/mesh_walker/runs_aug_360_must/0004-11.09.2020..04.35__shrec11_16-04_A'
+  logdir = "../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/" #'/home/alonla/mesh_walker/runs_aug_360_must/0004-11.09.2020..04.35__shrec11_16-04_A'
   dataset_path = 'datasets_processed/shrec11/16-04_a/test/*.npz' #os.path.expanduser('~') + '/mesh_walker/datasets_processed/shrec11/16-04_a/test/*.npz'
   if 0:
     acc, _ = evaluate_classification.calc_accuracy_test(logdir=logdir,

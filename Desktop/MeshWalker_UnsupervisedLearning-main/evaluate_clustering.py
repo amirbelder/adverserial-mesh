@@ -59,7 +59,7 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
   classes2use = None #['desk', 'dresser', 'table', 'laptop', 'lamp', 'stool', 'wardrobe'] # or "None" for all
   # Amir
   if recon_training == True:
-    classes2use = [15, 25]
+    classes2use = [15, 18]#[15, 25]
   print_details = verbose_level >= 2
   if params is None:
     with open(logdir + '/params.txt') as fp:

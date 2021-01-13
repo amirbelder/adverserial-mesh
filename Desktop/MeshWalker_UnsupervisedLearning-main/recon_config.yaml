@@ -2,21 +2,28 @@
 #General Info
 result_path: '../../mesh_walker/mesh_reconstruction/'
 trained_model: '../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/'
+#'../../mesh_walker/runs_aug_360_must/0096-12.01.2021..18.04_horse_balls_only_shrec11_16-04_a'
 dataset_path: 'datasets_processed/shrec11/16-04_a/test/*.npz'
 
 
 #Training params
 learning_weight: 0.01
-max_label_diff: 0.1
+weight_threshold: 1
+max_label_diff: 0.3
+iterations_with_no_changes: 25
+no_change_threshold: 0.01
 max_iter: 100_000
 iter_2_change_weight: 1_000
 
 
 # Experiment params
-use_sphere_or_model: 'model'
-mesh_path: 'datasets_processed/shrec11/16-04_a/train/T187_not_changed_500.npz' #This is a camel
-target_label: 15
-source_label: 25
+use_sphere_or_model: 'model' #'sphere' #'model'
+mesh_path: 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #This is a camel
+#'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse
+
+# 15 - horse 18 - balls 25 - camel
+target_label: 15 
+source_label: 25 
 trained_only_2_classes: True
 
 

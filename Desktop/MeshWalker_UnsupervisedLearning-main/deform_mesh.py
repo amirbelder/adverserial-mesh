@@ -28,7 +28,7 @@ def generate_sphere():
   mesh = open3d.geometry.TriangleMesh()
   mesh.vertices = open3d.utility.Vector3dVector(sphere.vertices.copy())
   mesh.triangles = open3d.utility.Vector3iVector(sphere.faces.copy())
-  mesh, _, _ = dataset_prepare.remesh(mesh, 500)
+  mesh, _, _ = dataset_prepare.remesh(mesh, 1000)
   vertices = np.array(mesh.vertices)
   dataset.norm_model.sub_mean_for_data_augmentation = False
   dataset.norm_model(vertices)
@@ -117,8 +117,11 @@ def mesh_reconstruction(config):
   cpos = None
   w = config['learning_weight']
   teta = config['max_label_diff']
-  for num_iter in range(config['max_iter']):
+  num_iter_no_change = 0
+  last_dev_res = 0
+  skipped_iters = 0
 
+  for num_iter in range(config['max_iter']):
     features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
     ftrs = tf.cast(features[:, :, :3], tf.float32)
     v_indices = features[0, :, 3].astype(np.int)
@@ -127,9 +130,9 @@ def mesh_reconstruction(config):
       tape.watch(ftrs)
       pred = dnn_model(ftrs, classify=True, training=False)
       if config['attack'] == 'sparse_categorical_crossentropy':
-        loss = -w * tf.keras.losses.sparse_categorical_crossentropy(target_feature_vector, pred[0])    # 18 = two_balls , 15 - horse
+        loss = w * tf.keras.losses.sparse_categorical_crossentropy(target_feature_vector, pred[0])    # 18 = two_balls , 15 - horse
       else: # default
-        loss = -w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
+        loss = w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
         #print(pred[0])
     if num_iter == 0:
       prev_target_pred = (pred[0].numpy())[config['target_label']]
@@ -141,8 +144,14 @@ def mesh_reconstruction(config):
     #   attack * = teta
 
     # If we got this walk right, we might not want to upate this part
+
     if np.argmax(pred) == config['target_label']:
-      continue
+      skipped_iters += 1
+      if skipped_iters < 10:
+        print("skipped iter: ", num_iter)
+        continue
+      else:
+        skipped_iters = 0
 
     # Check to see that we didn't update too much
     # this is: pred(source_label) - pred(target_label)
@@ -150,26 +159,40 @@ def mesh_reconstruction(config):
 
     target_pred = (pred[0].numpy())[config['target_label']]
     source_pred = (pred[0].numpy())[config['source_label']]
-    if abs(prev_target_pred - target_pred) > teta:
-      w /= 10
+    if abs(prev_source_pred - source_pred) < config['no_change_threshold'] or abs(prev_target_pred - target_pred) < config['no_change_threshold']:
+      num_iter_no_change+=1
 
-    if abs(prev_source_pred - source_pred) > teta:
-      w /= 10
+    if num_iter_no_change > config['iterations_with_no_changes']:
+      if w * 2 < config['weight_threshold']:
+        w *= 2
+      num_iter_no_change=0
+
+    if abs(prev_source_pred - source_pred) > teta or abs(prev_target_pred - target_pred) > teta:
+      if w > 10e-3:
+        w /= 2
 
     if num_iter % config['iter_2_change_weight'] == 0:
-      w *= 10
+      if w * 10 < config['weight_threshold']:
+        w *= 10
 
     gradients = tape.gradient(attack, ftrs)
-    print(num_iter, attack.numpy(), np.argmax(pred))
+    print("iter:", num_iter, " attack:", attack.numpy(), " w:", w, " target prec:",
+          (pred[0].numpy())[config['target_label']], " source prec:", (pred[0].numpy())[config['source_label']])
     l.append(loss.numpy())
 
-    mesh_data['vertices'][v_indices[skip:]] -= gradients[0][skip:].numpy()
+    mesh_data['vertices'][v_indices[skip:]] += gradients[0][skip:].numpy()
     # Updating the last prediction
     prev_target_pred = target_pred
     prev_source_pred = source_pred
 
-    if num_iter % config['image_save_iter'] == 0:
+    curr_iter = num_iter - (num_iter % config['image_save_iter'])
+    if curr_iter / config['image_save_iter'] >= last_dev_res + 1 or num_iter==0:
       cpos = dump_mesh(mesh_data, config['result_path'], cpos, num_iter)
+      last_dev_res = num_iter / config['image_save_iter']
+
+
+    """if num_iter % config['image_save_iter'] == 0:
+      cpos = dump_mesh(mesh_data, config['result_path'], cpos, num_iter)"""
 
   if 1:
     plt.plot(l)

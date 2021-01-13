@@ -135,7 +135,7 @@ def train_val(params):
     if params.train_loss == ['triplet']:
       seg_loss = tfa.losses.TripletSemiHardLoss()
 
-  @tf.function
+  #@tf.function
   def train_step(model_ftrs_, labels_, one_label_per_model):
     sp = model_ftrs_.shape
     model_ftrs = tf.reshape(model_ftrs_, (-1, sp[-2], sp[-1]))
@@ -317,7 +317,7 @@ def run_one_job(job, job_part, network_task):
     #params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
     if recon_train == True:
       params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
-      params.classes_indices_to_use = list([15, 25]) #(params.classes_indices_to_use[15],params.classes_indices_to_use[25]) # [15, 25]  # 15 - horse, 25 - camel
+      params.classes_indices_to_use = [15, 18] #list([15, 25]) #(params.classes_indices_to_use[15],params.classes_indices_to_use[25]) # [15, 25]  # 15 - horse, 25 - camel
     #params.n_classes = len(params.classes_indices_to_use)
 
   train_val(params)
@@ -352,7 +352,7 @@ if __name__ == '__main__':
   job_part = '16-04_a'
 
   # choose network task from: 'features_extraction', 'unsupervised_classification', 'semantic_segmentation', 'classification'
-  network_task = 'segmentation' #'classification'
+  network_task = 'classification'
 
   if len(sys.argv) > 1:
     job = sys.argv[1].lower()

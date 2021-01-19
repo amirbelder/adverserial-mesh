@@ -24,11 +24,18 @@ timelog = {}
 timelog['prep_model'] = []
 timelog['fill_features'] = []
 
+import yaml
+def get_config(config):
+  with open(config, 'r') as stream:
+    return yaml.safe_load(stream)
+
+
+
 #get hyper params from yaml
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='recon_config.yaml', help='Path to the config file.')
 opts = parser.parse_args()
-config = utils.get_config(opts.config)
+config = get_config(opts.config)
 
 
 def print_enters(to_print):

@@ -1,4 +1,6 @@
 import os, shutil, time, copy, glob
+
+import yaml
 from easydict import EasyDict
 import json
 import platform
@@ -12,9 +14,11 @@ import pylab as plt
 from sklearn.manifold import TSNE
 from sklearn.decomposition import KernelPCA
 from tqdm import tqdm
+import argparse
 
 import rnn_model
 import utils
+import yaml
 import dataset
 import dataset_prepare
 
@@ -22,6 +26,16 @@ recon_training = True
 timelog = {}
 timelog['prep_model'] = []
 timelog['fill_features'] = []
+
+#get hyper params from yaml
+parser = argparse.ArgumentParser()
+parser.add_argument('--config', type=str, default='recon_config.yaml', help='Path to the config file.')
+opts = parser.parse_args()
+config = utils.get_config(opts.config)
+
+
+
+
 
 def print_enters(to_print):
   print("\n\n\n\n")
@@ -47,7 +61,7 @@ def show_walk(model, features, one_walk=False):
 
 
 def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use='last', classes_indices_to_use=None,
-                       dnn_model=None, params=None, verbose_level=2, min_max_faces2use=[0, 4000], model_fn=None,
+                       dnn_model=None, params=None, verbose_level=2, min_max_faces2use=[0, 5000], model_fn=None,
                        target_n_faces=['according_to_dataset'], n_walks_per_model=16, seq_len=None, data_augmentation={}):
   verbose_level = 2
   SHOW_WALK = 1
@@ -58,8 +72,12 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
   tf.random.set_seed(0)
   classes2use = None #['desk', 'dresser', 'table', 'laptop', 'lamp', 'stool', 'wardrobe'] # or "None" for all
   # Amir
-  if recon_training == True:
-    classes2use = [15, 18]#[15, 25]
+  if config['trained_only_2_classes'] == True:
+    # params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
+    first_label = min(config['source_label'], config['target_label'])
+    sec_label = max(config['source_label'], config['target_label'])
+    params.classes_indices_to_use = [first_label,
+                                     sec_label]
   print_details = verbose_level >= 2
   if params is None:
     with open(logdir + '/params.txt') as fp:
@@ -593,7 +611,13 @@ if __name__ == '__main__':
       dataset_path = data_path + curr_dataset_path
       print("dataset_path=", dataset_path, "\n\n")
 
-      cls2show = [15, 25]#None
+      if config['trained_only_2_classes'] == True:
+        # params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
+        first_label = min(config['source_label'], config['target_label'])
+        sec_label = max(config['source_label'], config['target_label'])
+        cls2show = [first_label, sec_label]
+      else:
+        cls2show = None
 
       acc, _ = calc_accuracy_test(logdir=logdir,
                                   dataset_folder=dataset_path, classes_indices_to_use=cls2show, labels=dataset_prepare.shrec11_labels, iter2use=iter2use,

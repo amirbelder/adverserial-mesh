@@ -391,7 +391,7 @@ def prepare_shrec11_from_raw():
   # Prepare labels per model name
   current_label = None
   model_number2label = [-1 for _ in range(600)]
-  for line in open(os.path.expanduser('~') + '/datasets_processed/shrec11/evaluation/test.cla'):
+  for line in open('../Shrec11/test.cla'):
     sp_line = line.split(' ')
     if len(sp_line) == 3:
       name = sp_line[0].replace('_test', '')
@@ -404,13 +404,13 @@ def prepare_shrec11_from_raw():
 
 
   # Prepare npz files
-  p_in = os.path.expanduser('~') + '/datasets_processed/shrec11/raw/'
-  p_out = os.path.expanduser('~') + '/mesh_walker/datasets_processed-tmp/shrec11_raw_1.5k/'
+  p_in = '../Shrec11/raw/'
+  p_out = os.path.expanduser('~') + '/mesh_walker/datasets_processed-tmp/shrec11_raw_2k/'
   prepare_directory_from_scratch('shrec11', pathname_expansion=p_in + '*.off',
-                                 p_out=p_out, add_labels=model_number2label, n_target_faces=[1500])
+                                 p_out=p_out, add_labels=model_number2label, n_target_faces=[2000])
 
   # Prepare split train / test
-  change_train_test_split(p_out, 16, 4, '16-04_C')
+  change_train_test_split(p_out, 16, 4, '16-04_a')
 
 
 def calc_face_labels_after_remesh(mesh_orig, mesh, face_labels):
@@ -630,9 +630,10 @@ if __name__ == '__main__':
   TEST_FAST = 0
   utils.config_gpu(False)
   np.random.seed(1)
+  prepare_shrec11_from_raw()
 
   #visualize_dataset('/home/alonlahav/mesh_walker/datasets_processed-tmp/sig17_seg_benchmark-no_simplification/*.npz')
-  visualize_dataset('/home/galye/mesh_walker/datasets_processed/shrec16/*.npz')
+  #visualize_dataset('/home/galye/mesh_walker/datasets_processed/shrec16/*.npz')
   '''
   dataset_name = 'human_seg'
   mode = 'from_raw'         # from_meshcnn / from_raw

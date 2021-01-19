@@ -37,7 +37,7 @@ def main():
                  'datasets_processed/shrec11/16-04_a/train/T579_not_changed_500.npz',
                  'datasets_processed/shrec11/16-04_a/train/T402_not_changed_500.npz',
                  'datasets_processed/shrec11/16-04_a/train/T529_not_changed_500.npz']
-    
+
     # horse:
     # 'datasets_processed/shrec11/16-04_a/train/T348_not_changed_500.npz'
     # camel

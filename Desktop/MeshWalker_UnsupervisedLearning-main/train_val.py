@@ -317,7 +317,7 @@ def run_one_job(job, job_part, network_task):
     #params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
     if recon_train == True:
       params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
-      params.classes_indices_to_use = [15, 18] #list([15, 25]) #(params.classes_indices_to_use[15],params.classes_indices_to_use[25]) # [15, 25]  # 15 - horse, 25 - camel
+      params.classes_indices_to_use = [15, 25] #list([15, 25]) #(params.classes_indices_to_use[15],params.classes_indices_to_use[25]) # [15, 25]  # 15 - horse, 25 - camel
     #params.n_classes = len(params.classes_indices_to_use)
 
   train_val(params)

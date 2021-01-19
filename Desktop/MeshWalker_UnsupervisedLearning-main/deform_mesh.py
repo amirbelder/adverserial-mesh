@@ -28,7 +28,7 @@ def generate_sphere():
   mesh = open3d.geometry.TriangleMesh()
   mesh.vertices = open3d.utility.Vector3dVector(sphere.vertices.copy())
   mesh.triangles = open3d.utility.Vector3iVector(sphere.faces.copy())
-  mesh, _, _ = dataset_prepare.remesh(mesh, 1000)
+  mesh, _, _ = dataset_prepare.remesh(mesh, 500)
   vertices = np.array(mesh.vertices)
   dataset.norm_model.sub_mean_for_data_augmentation = False
   dataset.norm_model(vertices)
@@ -38,7 +38,7 @@ def generate_sphere():
   return mesh
 
 
-def dump_mesh(mesh_data, path, cpos, iter):
+def dump_mesh(mesh_data, path, cpos, iter, target_pred = -1, source_pred = -1):
   window_size = [512, 512]
   p = pv.Plotter(off_screen=1, window_size=(int(window_size[0]), int(window_size[1])))
   faces = np.hstack([[3] + f.tolist() for f in mesh_data['faces']])
@@ -49,7 +49,11 @@ def dump_mesh(mesh_data, path, cpos, iter):
   rendered = p.screenshot()
   p.close()
   img = rendered.copy()
-  cv2.putText(img, str(iter), (img.shape[1] - 100, img.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,
+  if target_pred != -1 and source_pred != -1: #both are none default vales
+    my_text = str(iter) + " " + "source pred: " + str(source_pred) + " target pred: " + str(target_pred)
+  else:
+    my_text = str(iter)
+  cv2.putText(img, my_text, (img.shape[1] - 100, img.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,
               color=(0, 255, 255), thickness=2)
   if not os.path.isdir(path):
     os.makedirs(path)
@@ -79,7 +83,7 @@ def mesh_reconstruction(config):
     params = EasyDict(json.load(fp))
   model_fn = tf.train.latest_checkpoint(config['trained_model'])
   params.batch_size = 1
-  params.seq_len = 800
+  params.seq_len = 200
   params.n_walks_per_model = 1
   params.set_seq_len_by_n_faces = False
   params.data_augmentaion_vertices_functions = []
@@ -187,7 +191,7 @@ def mesh_reconstruction(config):
 
     curr_iter = num_iter - (num_iter % config['image_save_iter'])
     if curr_iter / config['image_save_iter'] >= last_dev_res + 1 or num_iter==0:
-      cpos = dump_mesh(mesh_data, config['result_path'], cpos, num_iter)
+      cpos = dump_mesh(mesh_data, config['result_path'], cpos, num_iter, target_pred, source_pred)
       last_dev_res = num_iter / config['image_save_iter']
 
 
@@ -203,10 +207,6 @@ def mesh_reconstruction(config):
   cmd = f'ffmpeg -framerate 24 -i {res_path}img_%05d.jpg {res_path}mesh_reconstruction.mp4'
   os.system(cmd)
   return
-
-def get_config(config):
-  with open(config, 'r') as stream:
-    return yaml.safe_load(stream)
 
 def check_model_accuracy():
   iter2use = 'last'
@@ -231,7 +231,7 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--config', type=str, default='recon_config.yaml', help='Path to the config file.')
   opts = parser.parse_args()
-  config = get_config(opts.config)
+  config = utils.get_config(opts.config)
 
   #check_model_accuracy()
   mesh_reconstruction(config)

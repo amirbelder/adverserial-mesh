@@ -8,6 +8,8 @@ import numpy as np
 import tensorflow as tf
 import pyvista as pv
 import trimesh
+import yaml
+
 from dataset_prepare import shrec11_labels, model_net_labels
 
 #import dnn_cad_seq
@@ -519,3 +521,7 @@ def print_labels_names_and_indices(model_name):
   else:
     print("utils Error - Unknown model name !!")
 
+
+def get_config(config):
+  with open(config, 'r') as stream:
+    return yaml.safe_load(stream)

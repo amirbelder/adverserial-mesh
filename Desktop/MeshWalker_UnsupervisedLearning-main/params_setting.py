@@ -188,7 +188,7 @@ def shrec11_params(split_part, network_task):
   # |V| = 250 , |F| = 500 => seq_len = |V| / 2.5 = 100
   params = set_up_default_params(network_task, 'shrec11_' + split_part, 0)
   params.n_classes = 30
-  params.seq_len = 200
+  params.seq_len = 2000
   params.min_seq_len = int(params.seq_len / 2)
 
   # Gal's changes
@@ -196,8 +196,12 @@ def shrec11_params(split_part, network_task):
   #params.datasets2use['test']  = [os.path.expanduser('~') + '/mesh_walker/datasets_processed/shrec16/' + split_part + '/test/*.npz']
   print()
   #params.datasets2use['train'] = [os.path.expanduser('~') + '/Desktop/MeshWalker_UnsupervisedLearning-main/datasets_processed/' + split_part + '/train/*.npz']
-  params.datasets2use['train'] = ['datasets_processed/shrec11/' + split_part + '/train/*.npz']
-  params.datasets2use['test']  = ['datasets_processed/shrec11/' + split_part + '/test/*.npz']
+  #500
+  #params.datasets2use['train'] = ['datasets_processed/shrec11/' + split_part + '/train/*.npz']
+  #params.datasets2use['test']  = ['datasets_processed/shrec11/' + split_part + '/test/*.npz']
+  #5000
+  params.datasets2use['train'] = ['datasets_processed/shrec11_raw_5k/' + split_part + '/train/*.npz']
+  params.datasets2use['test']  = ['datasets_processed/shrec11_raw_5k/' + split_part + '/test/*.npz']
 
   params.train_data_augmentation = {'rotation': MAX_AUGMENTATION}
 

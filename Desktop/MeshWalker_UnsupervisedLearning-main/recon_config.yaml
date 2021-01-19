@@ -18,12 +18,13 @@ iter_2_change_weight: 1_000
 
 # Experiment params
 use_sphere_or_model: 'model' #'sphere' #'model'
-mesh_path: 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #This is a camel
-#'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse
+mesh_path: 'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse
+#'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #This is a camel
+
 
 # 15 - horse 18 - balls 25 - camel
-target_label: 15 
-source_label: 25 
+target_label: 25 
+source_label: 15 
 trained_only_2_classes: True
 
 
@@ -38,4 +39,10 @@ image_display_iter: 100       # How often do you want to display output images d
 display_size: 15              # How many images do you want to display each time
 snapshot_save_iter: 10_000    # How often do you want to save trained models
 log_iter: 1                   # How often do you want to log the training stats
+
+#Addons
+generate_csv_file2label : False
+
+#Manifold training
+manifold_training: False
 

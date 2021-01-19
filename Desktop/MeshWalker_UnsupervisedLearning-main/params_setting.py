@@ -183,7 +183,7 @@ def cubes_params(network_task):
 def shrec11_params(split_part, network_task):
   # split_part is one of the following:
   # 10-10_A / 10-10_B / 10-10_C
-  # 16-04_a / 16-04_B / 16-04_C
+  # 16-04_a / 16-04_b / 16-04_C
 
   # |V| = 250 , |F| = 500 => seq_len = |V| / 2.5 = 100
   params = set_up_default_params(network_task, 'shrec11_' + split_part, 0)

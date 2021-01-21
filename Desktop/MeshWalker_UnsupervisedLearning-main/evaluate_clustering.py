@@ -40,10 +40,6 @@ parser.add_argument('--config', type=str, default='recon_config.yaml', help='Pat
 opts = parser.parse_args()
 config = get_config(opts.config)"""
 
-
-
-
-
 def print_enters(to_print):
   print("\n\n\n\n")
   print(to_print)
@@ -78,13 +74,16 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
   np.random.seed(1)
   tf.random.set_seed(0)
   classes2use = None #['desk', 'dresser', 'table', 'laptop', 'lamp', 'stool', 'wardrobe'] # or "None" for all
+  params.classes_indices_to_use = [15,
+                                   25]
+
   # Amir
-  if config['trained_only_2_classes'] == True:
+  """if config['trained_only_2_classes'] == True:
     # params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
     first_label = min(config['source_label'], config['target_label'])
     sec_label = max(config['source_label'], config['target_label'])
     params.classes_indices_to_use = [first_label,
-                                     sec_label]
+                                     sec_label]"""
   print_details = verbose_level >= 2
   if params is None:
     with open(logdir + '/params.txt') as fp:
@@ -618,14 +617,14 @@ if __name__ == '__main__':
       dataset_path = data_path + curr_dataset_path
       print("dataset_path=", dataset_path, "\n\n")
 
-      if config['trained_only_2_classes'] == True:
+      """if config['trained_only_2_classes'] == True:
         # params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
         first_label = min(config['source_label'], config['target_label'])
         sec_label = max(config['source_label'], config['target_label'])
         cls2show = [first_label, sec_label]
       else:
-        cls2show = None
-
+        cls2show = None"""
+      cls2show = [15, 25]
       acc, _ = calc_accuracy_test(logdir=logdir,
                                   dataset_folder=dataset_path, classes_indices_to_use=cls2show, labels=dataset_prepare.shrec11_labels, iter2use=iter2use,
                                   model_fn=model_fn, n_walks_per_model=8)

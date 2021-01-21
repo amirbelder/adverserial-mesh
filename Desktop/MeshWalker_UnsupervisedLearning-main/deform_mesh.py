@@ -61,7 +61,29 @@ def dump_mesh(mesh_data, path, cpos, iter, target_pred = -1, source_pred = -1):
   dump_mesh.i += 1
 dump_mesh.i = 0
 
-
+def dump_prec(mesh_data, path, cpos, iter, target_pred = -1, source_pred = -1):
+  window_size = [512, 512]
+  p = pv.Plotter(off_screen=1, window_size=(int(window_size[0]), int(window_size[1])))
+  faces = np.hstack([[3] + f.tolist() for f in mesh_data['faces']])
+  surf = pv.PolyData(mesh_data['vertices'], faces)
+  p.add_mesh(surf, show_edges=False, color=None)
+  p.camera_position = cpos
+  p.set_background("#AAAAAA", top="White")
+  rendered = p.screenshot()
+  p.close()
+  img = rendered.copy()
+  if target_pred != -1 and source_pred != -1:  # both are none default vales
+    my_text = str(iter) + " " + "source pred: " + str(source_pred) + " target pred: " + str(target_pred)
+  else:
+    my_text = str(iter)
+  cv2.putText(img, my_text, (img.shape[1] - 100, img.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,
+              color=(0, 255, 255), thickness=2)
+  if not os.path.isdir(path):
+    os.makedirs(path)
+  prec = str(source_pred)
+  cv2.imwrite(path + '/img_' + prec + "_" + str(dump_mesh.i).zfill(5) + '.jpg', img)
+  dump_mesh.i += 1
+dump_mesh.i = 0
 
 def calc_ftr_vector(params, dnn_model, npz_fn):
   params = copy.deepcopy(params)
@@ -83,7 +105,7 @@ def mesh_reconstruction(config):
     params = EasyDict(json.load(fp))
   model_fn = tf.train.latest_checkpoint(config['trained_model'])
   params.batch_size = 1
-  params.seq_len = 200
+  params.seq_len = config['walk_len']
   params.n_walks_per_model = 1
   params.set_seq_len_by_n_faces = False
   params.data_augmentaion_vertices_functions = []
@@ -92,6 +114,9 @@ def mesh_reconstruction(config):
   params.net_input += ['vertex_indices']
   dataset.setup_features_params(params, params)
   dataset.mesh_data_to_walk_features.SET_SEED_WALK = False
+
+  prec_arr = [x * 0.1 for x in range(11)]
+  was_made = [False for i in range(10)]
 
   dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, 3, model_fn,
                                    model_must_be_load=True, dump_model_visualization=False)
@@ -194,6 +219,10 @@ def mesh_reconstruction(config):
       cpos = dump_mesh(mesh_data, config['result_path'], cpos, num_iter, target_pred, source_pred)
       last_dev_res = num_iter / config['image_save_iter']
 
+    curr_prec_range_index = int(source_pred*10)
+    if prec_arr[curr_prec_range_index]< source_pred <prec_arr[curr_prec_range_index+1] and was_made[curr_prec_range_index] is False:
+      dump_prec(mesh_data, config['precent_result_path'], cpos, num_iter, target_pred, source_pred)
+      was_made[curr_prec_range_index] = False
 
     """if num_iter % config['image_save_iter'] == 0:
       cpos = dump_mesh(mesh_data, config['result_path'], cpos, num_iter)"""

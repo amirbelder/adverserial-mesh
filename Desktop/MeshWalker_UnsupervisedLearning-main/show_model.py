@@ -21,7 +21,7 @@ def load_model_from_npz(npz_path):
 def main():
     print("in main")
 
-    npz_paths = ['datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz',
+    """npz_paths = ['datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz',
                  'datasets_processed/shrec11/16-04_a/train/T348_not_changed_500.npz',
                  'datasets_processed/shrec11/16-04_a/train/T364_not_changed_500.npz',
                  'datasets_processed/shrec11/16-04_a/train/T184_not_changed_500.npz',
@@ -36,7 +36,8 @@ def main():
                  'datasets_processed/shrec11/16-04_a/train/T234_not_changed_500.npz',
                  'datasets_processed/shrec11/16-04_a/train/T579_not_changed_500.npz',
                  'datasets_processed/shrec11/16-04_a/train/T402_not_changed_500.npz',
-                 'datasets_processed/shrec11/16-04_a/train/T529_not_changed_500.npz']
+                 'datasets_processed/shrec11/16-04_a/train/T529_not_changed_500.npz']"""
+    npz_paths = ['datasets_processed/shrec11_raw_5k/T398_simplified_to_5000.npz']
 
     # horse:
     # 'datasets_processed/shrec11/16-04_a/train/T348_not_changed_500.npz'

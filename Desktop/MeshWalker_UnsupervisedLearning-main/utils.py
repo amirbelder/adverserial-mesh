@@ -402,7 +402,7 @@ def print_cpos(cpos):
 next_iter_to_keep = 0 # Should be set by -train_val- function, each time job starts
 def save_model_if_needed(iterations, dnn_model, params):
   global next_iter_to_keep
-  iter_th = 20000
+  iter_th = 2000
   keep = iterations.numpy() >= next_iter_to_keep
   dnn_model.save_weights(params.logdir, iterations.numpy(), keep=keep)
   if keep:

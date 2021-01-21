@@ -197,11 +197,11 @@ def shrec11_params(split_part, network_task):
   print()
   #params.datasets2use['train'] = [os.path.expanduser('~') + '/Desktop/MeshWalker_UnsupervisedLearning-main/datasets_processed/' + split_part + '/train/*.npz']
   #500
-  #params.datasets2use['train'] = ['datasets_processed/shrec11/' + split_part + '/train/*.npz']
-  #params.datasets2use['test']  = ['datasets_processed/shrec11/' + split_part + '/test/*.npz']
+  params.datasets2use['train'] = ['datasets_processed/shrec11/' + split_part + '/train/*.npz']
+  params.datasets2use['test']  = ['datasets_processed/shrec11/' + split_part + '/test/*.npz']
   #5000
-  params.datasets2use['train'] = ['datasets_processed/shrec11_raw_5k/' + split_part + '/train/*.npz']
-  params.datasets2use['test']  = ['datasets_processed/shrec11_raw_5k/' + split_part + '/test/*.npz']
+  #params.datasets2use['train'] = ['datasets_processed/shrec11_raw_5k/' + split_part + '/train/*.npz']
+  #params.datasets2use['test']  = ['datasets_processed/shrec11_raw_5k/' + split_part + '/test/*.npz']
 
   params.train_data_augmentation = {'rotation': MAX_AUGMENTATION}
 

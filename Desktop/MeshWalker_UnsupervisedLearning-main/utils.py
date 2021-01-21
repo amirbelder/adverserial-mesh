@@ -44,6 +44,12 @@ colors_list = ['black',       'red',    'green',        'blue',       'orange', 
                                                                       'sienna',
                ]
 
+
+def get_config(config):
+  with open(config, 'r') as stream:
+    return yaml.safe_load(stream)
+
+
 def config_gpu(use_gpu=True):
   print('tf.__version__', tf.__version__)
   np.set_printoptions(suppress=True)
@@ -521,8 +527,6 @@ def print_labels_names_and_indices(model_name):
       print(i, ": ",model_net_labels[i])
   else:
     print("utils Error - Unknown model name !!")
+  return
 
 
-def get_config(config):
-  with open(config, 'r') as stream:
-    return yaml.safe_load(stream)

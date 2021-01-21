@@ -354,20 +354,20 @@ if __name__ == '__main__':
   opts = parser.parse_args()
   config = utils.get_config(opts.config)
 
-  job = 'shrec11'
+  job = config['job']
   #job_part = '10-10_A'
-  job_part = '16-04_a'
+  job_part = config['job_part'] #16-04_a'
 
   # choose network task from: 'features_extraction', 'unsupervised_classification', 'semantic_segmentation', 'classification'
   network_task = 'classification'
 
-  if len(sys.argv) > 1:
+  """if len(sys.argv) > 1:
     job = sys.argv[1].lower()
   else:
     print("Please specify the job ! exiting..")
     exit(0)
   if len(sys.argv) > 2:
-    job_part = sys.argv[2].lower()
+    job_part = sys.argv[2].lower()"""
 
   if job.lower() == 'all':
     jobs, job_parts = get_all_jobs()

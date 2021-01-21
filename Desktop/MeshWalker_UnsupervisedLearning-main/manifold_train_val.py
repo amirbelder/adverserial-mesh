@@ -21,6 +21,13 @@ def print_enters(to_print):
   print(to_print)
   print("\n\n\n\n")
 
+def label_to_one_hot(labels: tf.Tensor, params):
+  #depth = labels.shape[0]
+  return tf.one_hot(indices=labels, depth=params.n_classes)
+
+
+
+
 def train_val(params):
   utils.next_iter_to_keep = 10000
   print(utils.color.BOLD + utils.color.RED + 'params.logdir :::: ', params.logdir, utils.color.END)
@@ -105,7 +112,7 @@ def train_val(params):
     raise Exception('optimizer_type not supported: ' + params.optimizer_type)
 
   if params.net == 'RnnWalkNet':
-    dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, params.net_input_dim, init_net_using,
+    dnn_model = rnn_model.RnnManifoldWalkNet(params, params.n_classes, params.net_input_dim, init_net_using,
                                      optimizer=optimizer)
   elif params.net == 'Unsupervised_RnnWalkNet':
     dnn_model = rnn_model.Unsupervised_RnnWalkNet(params, params.n_classes, params.net_input_dim, init_net_using,
@@ -126,11 +133,17 @@ def train_val(params):
   # Train / test functions
   # ----------------------
   if params.last_layer_actication is None:
-    seg_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    if params.net == 'RnnWalkNet':
+      seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+    else:
+      seg_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     if params.train_loss == ['triplet']:
       seg_loss = tfa.losses.TripletSemiHardLoss(from_logits=True)
   else:
-    seg_loss = tf.keras.losses.SparseCategoricalCrossentropy()
+    if params.net == 'RnnWalkNet':
+      seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+    else:
+      seg_loss = tf.keras.losses.SparseCategoricalCrossentropy()
     if params.train_loss == ['triplet']:
       seg_loss = tfa.losses.TripletSemiHardLoss()
 
@@ -143,14 +156,21 @@ def train_val(params):
         # Gal, when multiple walks are per walk, the labels are like this (for example if 2 walks per model):
         # labels = [1,1,7,7,8,8,3,3,16,16...]
         labels = tf.reshape(tf.transpose(tf.stack((labels_,)*params.n_walks_per_model)),(-1,))
-        predictions = dnn_model(model_ftrs)
+        if params.net == 'RnnWalkNet':
+          predictions = dnn_model(model_ftrs, 0.1, 1)
+        else:
+          predictions = dnn_model(model_ftrs)
       else:
         labels = tf.reshape(labels_, (-1, sp[-2]))
         skip = params.min_seq_len
         predictions = dnn_model(model_ftrs)[:, skip:]
         labels = labels[:, skip + 1:]
 
-      seg_train_accuracy(labels, predictions)
+      if params.net == 'RnnWalkNet':
+        labels = label_to_one_hot(labels, params)
+
+
+      #seg_train_accuracy(labels, predictions)
       loss = seg_loss(labels, predictions)
       loss += tf.reduce_sum(dnn_model.losses)
 

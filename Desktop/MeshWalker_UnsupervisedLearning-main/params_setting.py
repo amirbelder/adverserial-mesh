@@ -16,12 +16,36 @@ else:
   MAX_AUGMENTATION = 360
   run_folder = 'runs_aug_360_must'
 
-def set_up_default_params(network_task, run_name, cont_run_number=0):
+
+def use_pretrained_model(config):
+  import json
+  with open(config['trained_model'] + '/params.txt') as fp:
+    params = EasyDict(json.load(fp))
+
+  return params
+"""
+params.batch_size = 1
+  params.seq_len = config['walk_len']
+  params.n_walks_per_model = 1
+  params.set_seq_len_by_n_faces = False
+  params.data_augmentaion_vertices_functions = []
+  params.label_per_step = False
+  params.n_target_vrt_to_norm_walk = 0
+  params.net_input += ['vertex_indices']
+  dataset.setup_features_params(params, params)
+  dataset.mesh_data_to_walk_features.SET_SEED_WALK = False
+"""
+
+
+def set_up_default_params(network_task, run_name, cont_run_number=0, config = None):
   '''
   Define dafault parameters, commonly for many test case
   '''
-  params = EasyDict()
+  if config is not None:
+    if config['use_pretrained_model'] is True:
+      return use_pretrained_model(config)
 
+  params = EasyDict()
   params.dataset = run_name
   params.cont_run_number = cont_run_number
   params.run_root_path = os.path.expanduser('~') + '/mesh_walker/' + run_folder
@@ -57,6 +81,12 @@ def set_up_default_params(network_task, run_name, cont_run_number=0):
     # Amir - changed to False to see what happens
     params.one_label_per_model = True
     params.train_loss = ['cros_entr']
+    params.net = 'RnnWalkNet'
+  if params.network_task == 'manifold_classification':
+    params.n_walks_per_model = 1
+    params.one_label_per_model = True
+    params.train_loss = ['cros_entr']
+    params.net = 'Manifold_RnnWalkNet'
   elif params.network_task == 'semantic_segmentation':
     params.n_walks_per_model = 4
     params.one_label_per_model = False
@@ -65,6 +95,7 @@ def set_up_default_params(network_task, run_name, cont_run_number=0):
     params.n_walks_per_model = 2
     params.one_label_per_model = True
     params.train_loss = ['triplet']
+    params.net = 'Unsupervised_RnnWalkNet'
   elif params.network_task == 'features_extraction':
     params.n_walks_per_model = 2
     params.one_label_per_model = True
@@ -80,11 +111,6 @@ def set_up_default_params(network_task, run_name, cont_run_number=0):
   params.reverse_walk = False
   params.train_min_max_faces2use = [0, np.inf]
   params.test_min_max_faces2use = [0, np.inf]
-
-  if params.network_task == 'unsupervised_classification':
-    params.net = 'Unsupervised_RnnWalkNet'
-  else:
-    params.net = 'RnnWalkNet'
   params.last_layer_actication = 'softmax'
   params.use_norm_layer = 'InstanceNorm' # BatchNorm / InstanceNorm / None
   params.layer_sizes = None
@@ -180,15 +206,15 @@ def cubes_params(network_task):
 
   return params
 
-def shrec11_params(split_part, network_task):
+def shrec11_params(split_part, network_task, config = None):
   # split_part is one of the following:
   # 10-10_A / 10-10_B / 10-10_C
   # 16-04_a / 16-04_B / 16-04_C
 
   # |V| = 250 , |F| = 500 => seq_len = |V| / 2.5 = 100
-  params = set_up_default_params(network_task, 'shrec11_' + split_part, 0)
+  params = set_up_default_params(network_task, 'shrec11_' + split_part, 0, config)
   params.n_classes = 30
-  params.seq_len = 800
+  params.seq_len = 200
   params.min_seq_len = int(params.seq_len / 2)
 
   # Gal's changes
@@ -197,11 +223,11 @@ def shrec11_params(split_part, network_task):
   print()
   #params.datasets2use['train'] = [os.path.expanduser('~') + '/Desktop/MeshWalker_UnsupervisedLearning-main/datasets_processed/' + split_part + '/train/*.npz']
   #500
-  #params.datasets2use['train'] = ['datasets_processed/shrec11/' + split_part + '/train/*.npz']
-  #params.datasets2use['test']  = ['datasets_processed/shrec11/' + split_part + '/test/*.npz']
+  params.datasets2use['train'] = ['datasets_processed/shrec11/' + split_part + '/train/*.npz']
+  params.datasets2use['test']  = ['datasets_processed/shrec11/' + split_part + '/test/*.npz']
   #5000
-  params.datasets2use['train'] = ['datasets_processed/shrec11_raw_2k/' + split_part + '/train/*.npz']
-  params.datasets2use['test']  = ['datasets_processed/shrec11_raw_2k/' + split_part + '/test/*.npz']
+  #params.datasets2use['train'] = ['datasets_processed/shrec11_raw_2k/' + split_part + '/train/*.npz']
+  #params.datasets2use['test']  = ['datasets_processed/shrec11_raw_2k/' + split_part + '/test/*.npz']
 
   params.train_data_augmentation = {'rotation': MAX_AUGMENTATION}
 
@@ -209,7 +235,7 @@ def shrec11_params(split_part, network_task):
   params.full_accuracy_test = {'dataset_folder': params.datasets2use['test'][0],
                                'labels': dataset_prepare.shrec11_labels}
 
-  params.iters_to_train = 30e3
+  params.iters_to_train = 100e3
 
 
   return params

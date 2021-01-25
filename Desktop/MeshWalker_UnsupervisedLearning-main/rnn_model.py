@@ -328,13 +328,10 @@ class RnnManifoldWalkNet(RnnWalkBase):
         mask = mask[:, ::2]
     x3 = self._gru3(x2, training=training, mask=mask)
     x = x3
-    if alpha!=0 :
+    if alpha != 0 :
       orig_x = x3
       shifted_x = tf.roll(orig_x, shift=[shift_size, 0], axis=[0, 1])
-      x = orig_x * alpha + shifted_x * (1- alpha)
-
-
-
+      x = orig_x * alpha + shifted_x * (1 - alpha)
 
 
     #if self._params.one_label_per_model:

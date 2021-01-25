@@ -24,13 +24,13 @@ timelog = {}
 timelog['prep_model'] = []
 timelog['fill_features'] = []
 
-"""import yaml
+import yaml
 def get_config(config):
   with open(config, 'r') as stream:
     return yaml.safe_load(stream)
 
 
-
+"""
 #get hyper params from yaml
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='recon_config.yaml', help='Path to the config file.')
@@ -71,17 +71,14 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
   PRINT_CONFUSION_MATRIX = False
   np.random.seed(1)
   tf.random.set_seed(0)
-  classes2use = None #['desk', 'dresser', 'table', 'laptop', 'lamp', 'stool', 'wardrobe'] # or "None" for all
-  params.classes_indices_to_use = [15,
-                                   25]
+  #classes2use = None #['desk', 'dresser', 'table', 'laptop', 'lamp', 'stool', 'wardrobe'] # or "None" for all
+  #params.classes_indices_to_use = None #[15, 25]
+  if params is None:
+    classes2use = classes_indices_to_use
+  else:
+    classes2use = params.classes_indices_to_use
 
-  # Amir
-  """if config['trained_only_2_classes'] == True:
-    # params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
-    first_label = min(config['source_label'], config['target_label'])
-    sec_label = max(config['source_label'], config['target_label'])
-    params.classes_indices_to_use = [first_label,
-                                     sec_label]"""
+
   print_details = verbose_level >= 2
   if params is None:
     with open(logdir + '/params.txt') as fp:
@@ -121,7 +118,8 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
     print('params.seq_len:', params.seq_len, ' ; n_walks_per_model:', n_walks_per_model)
 
   #Amir - check 800 after training over 200
-  params.seq_len = 800
+  if params is None:
+    params.seq_len = 200
 
   if SHOW_WALK:
     params.net_input += ['vertex_indices']
@@ -129,6 +127,7 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
   params.set_seq_len_by_n_faces = 1
   if dataset_folder:
     size_limit = np.inf # 200
+
     params.classes_indices_to_use = classes2use
     pathname_expansion = dataset_folder
     if 1:
@@ -150,6 +149,9 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
   if dnn_model is None:
     if params.net == "RnnWalkNet":
       dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, params.net_input_dim - SHOW_WALK, model_fn,
+                                       model_must_be_load=True, dump_model_visualization=False)
+    elif params.net == "Manifold_RnnWalkNet":
+      dnn_model = rnn_model.RnnManifoldWalkNet(params, params.n_classes, params.net_input_dim - SHOW_WALK, model_fn,
                                        model_must_be_load=True, dump_model_visualization=False)
     elif params.net == "Unsupervised_RnnWalkNet":
       dnn_model = rnn_model.Unsupervised_RnnWalkNet(params, params.n_classes, params.net_input_dim - SHOW_WALK, model_fn,
@@ -540,6 +542,13 @@ if __name__ == '__main__':
   modelnet40 = True if dataset_name == "modelnet40" else False
   shrec11 = True if dataset_name == "shrec11" else False
 
+  if len(sys.argv) == 6:
+    config_path = sys.argv[6]
+    config = get_config(config_path)
+  else:
+    config = None
+
+
   if trained_model_path == 'latest':
     trained_models_names = glob.glob("/home/galye/mesh_walker/runs_aug_360_must/*"+dataset_name+"*")
     trained_models_names.sort(key=os.path.getctime)
@@ -615,14 +624,15 @@ if __name__ == '__main__':
       dataset_path = data_path + curr_dataset_path
       print("dataset_path=", dataset_path, "\n\n")
 
-      """if config['trained_only_2_classes'] == True:
-        # params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
-        first_label = min(config['source_label'], config['target_label'])
-        sec_label = max(config['source_label'], config['target_label'])
-        cls2show = [first_label, sec_label]
+      if config is not None:
+        if config['trained_only_2_classes'] == True:
+          # params.classes_indices_to_use = (params.classes_indices_to_use)[0:2]
+          first_label = min(config['source_label'], config['target_label'])
+          sec_label = max(config['source_label'], config['target_label'])
+          cls2show = [first_label, sec_label]
       else:
-        cls2show = None"""
-      cls2show = [15, 25]
+        cls2show = None
+      cls2show = None #[15, 25]
       acc, _ = calc_accuracy_test(logdir=logdir,
                                   dataset_folder=dataset_path, classes_indices_to_use=cls2show, labels=dataset_prepare.shrec11_labels, iter2use=iter2use,
                                   model_fn=model_fn, n_walks_per_model=8)

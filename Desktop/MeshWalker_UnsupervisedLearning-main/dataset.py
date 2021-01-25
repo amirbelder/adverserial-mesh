@@ -458,6 +458,8 @@ def tf_mesh_dataset(params, pathname_expansion, mode=None, size_limit=np.inf, sh
 
   if mode == 'classification':
     dataset_params_list[params_idx].label_per_step = False
+  elif mode == 'manifold_classification':
+    dataset_params_list[params_idx].label_per_step = False
   elif mode == 'semantic_segmentation':
     dataset_params_list[params_idx].label_per_step = True
   elif mode == 'unsupervised_classification':

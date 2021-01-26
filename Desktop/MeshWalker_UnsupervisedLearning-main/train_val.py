@@ -135,7 +135,7 @@ def train_val(params):
     if params.train_loss == ['triplet']:
       seg_loss = tfa.losses.TripletSemiHardLoss()
 
-  #@tf.function
+  @tf.function
   def train_step(model_ftrs_, labels_, one_label_per_model):
     sp = model_ftrs_.shape
     model_ftrs = tf.reshape(model_ftrs_, (-1, sp[-2], sp[-1]))

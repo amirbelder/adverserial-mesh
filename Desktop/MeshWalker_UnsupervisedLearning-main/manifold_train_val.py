@@ -15,11 +15,25 @@ import params_setting
 import split_data_classes_folders
 recon_train = True
 import argparse
+import random
 
 def print_enters(to_print):
   print("\n\n\n\n")
   print(to_print)
   print("\n\n\n\n")
+
+def label_to_one_hot(labels: tf.Tensor, params, alpha=0, shift_size=1):
+  if alpha == 0:
+    return tf.one_hot(indices=labels, depth=params.n_classes)
+  else:
+    return get_manifold_labels(tf.one_hot(indices=labels, depth=params.n_classes), alpha, shift_size)
+
+def get_manifold_labels(one_hot_labels, alpha, shift_size):
+  orig_labels = one_hot_labels
+  shifted_labels = tf.roll(orig_labels, shift=[shift_size, 0], axis=[0, 1])
+  manifold_labels = orig_labels * alpha + shifted_labels * (1 - alpha)
+  return manifold_labels
+
 
 def train_val(params):
   utils.next_iter_to_keep = 10000
@@ -104,12 +118,27 @@ def train_val(params):
   else:
     raise Exception('optimizer_type not supported: ' + params.optimizer_type)
 
-  if params.net == 'RnnWalkNet':
-    dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, params.net_input_dim, init_net_using,
-                                     optimizer=optimizer)
-  elif params.net == 'Unsupervised_RnnWalkNet':
-    dnn_model = rnn_model.Unsupervised_RnnWalkNet(params, params.n_classes, params.net_input_dim, init_net_using,
-                                     optimizer=optimizer)
+  if config['use_pretrained_model'] is True:
+    model_fn = tf.train.latest_checkpoint(config['trained_model'])
+    if params.net == 'RnnWalkNet':
+      dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, 3, model_fn,
+                                     model_must_be_load=True, dump_model_visualization=False)
+    elif params.net == "Manifold_RnnWalkNet":
+      dnn_model = rnn_model.RnnManifoldWalkNet(params, params.n_classes, 3, model_fn,
+                                     model_must_be_load=True, dump_model_visualization=False)
+    elif params.net == 'Unsupervised_RnnWalkNet':
+      dnn_model = rnn_model.Unsupervised_RnnWalkNet(params, params.n_classes, 3, model_fn,
+                                     model_must_be_load=True, dump_model_visualization=False)
+  else:
+    if params.net == 'RnnWalkNet':
+      dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, params.net_input_dim, init_net_using,
+                                       optimizer=optimizer)
+    elif params.net == "Manifold_RnnWalkNet":
+      dnn_model = rnn_model.RnnManifoldWalkNet(params, params.n_classes, params.net_input_dim, init_net_using,
+                                       optimizer=optimizer)
+    elif params.net == 'Unsupervised_RnnWalkNet':
+      dnn_model = rnn_model.Unsupervised_RnnWalkNet(params, params.n_classes, params.net_input_dim, init_net_using,
+                                       optimizer=optimizer)
 
   # Other initializations
   # ---------------------
@@ -118,6 +147,7 @@ def train_val(params):
   for name in time_msrs_names:
     time_msrs[name] = 0
   seg_train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='seg_train_accuracy')
+  manifold_seg_train_accuracy = tf.keras.metrics.CategoricalCrossentropy(name='manifold_seg_train_accuracy')
 
   train_log_names = ['seg_loss']
   train_logs = {name: tf.keras.metrics.Mean(name=name) for name in train_log_names}
@@ -129,10 +159,15 @@ def train_val(params):
     seg_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     if params.train_loss == ['triplet']:
       seg_loss = tfa.losses.TripletSemiHardLoss(from_logits=True)
+    elif params.train_loss == ['manifold_cros_entr']:
+      seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+
   else:
-    seg_loss = tf.keras.losses.SparseCategoricalCrossentropy()
+    seg_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     if params.train_loss == ['triplet']:
       seg_loss = tfa.losses.TripletSemiHardLoss()
+    elif params.train_loss == ['manifold_cros_entr']:
+      seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
 
   #@tf.function
   def train_step(model_ftrs_, labels_, one_label_per_model):
@@ -143,14 +178,21 @@ def train_val(params):
         # Gal, when multiple walks are per walk, the labels are like this (for example if 2 walks per model):
         # labels = [1,1,7,7,8,8,3,3,16,16...]
         labels = tf.reshape(tf.transpose(tf.stack((labels_,)*params.n_walks_per_model)),(-1,))
-        predictions = dnn_model(model_ftrs)
+        if params.train_loss == ['manifold_cros_entr']:
+          predictions = dnn_model(model_ftrs, alpha, config['shift_size'])
+        else:
+          predictions = dnn_model(model_ftrs)
       else:
         labels = tf.reshape(labels_, (-1, sp[-2]))
         skip = params.min_seq_len
         predictions = dnn_model(model_ftrs)[:, skip:]
         labels = labels[:, skip + 1:]
 
-      seg_train_accuracy(labels, predictions)
+      if params.train_loss == ['manifold_cros_entr'] and alpha != 0:
+        labels = label_to_one_hot(labels, params)
+        manifold_seg_train_accuracy(labels, predictions)
+      else:
+        seg_train_accuracy(labels, predictions)
       loss = seg_loss(labels, predictions)
       loss += tf.reduce_sum(dnn_model.losses)
 
@@ -162,20 +204,28 @@ def train_val(params):
     return loss
 
   test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='test_accuracy')
-  @tf.function
+  #@tf.function
   def test_step(model_ftrs_, labels_, one_label_per_model):
     sp = model_ftrs_.shape
     model_ftrs = tf.reshape(model_ftrs_, (-1, sp[-2], sp[-1]))
     if one_label_per_model:
       labels = tf.reshape(tf.transpose(tf.stack((labels_,) * params.n_walks_per_model)), (-1,))
-      predictions = dnn_model(model_ftrs, training=False)
+      if params.net == 'Manifold_RnnWalkNet':
+        predictions = dnn_model(model_ftrs, alpha=alpha, shift_size=config['shift_size'])
+      else:
+        predictions = dnn_model(model_ftrs)
     else:
       labels = tf.reshape(labels_, (-1, sp[-2]))
       skip = params.min_seq_len
-      predictions = dnn_model(model_ftrs, training=False)[:, skip:]
+      predictions = dnn_model(model_ftrs)[:, skip:]
       labels = labels[:, skip + 1:]
+
+    if params.net == 'Manifold_RnnWalkNet':
+      labels = label_to_one_hot(labels, params)
+    else:
+      test_accuracy(labels, predictions)
     best_pred = tf.math.argmax(predictions, axis=-1)
-    test_accuracy(labels, predictions)
+
     confusion = None
     #Amir
     # the confusion had to recive zero label, that's a problem
@@ -221,6 +271,10 @@ def train_val(params):
       tf.summary.scalar(name="mem/gpu_tmpr", data=gpu_tmpr, step=optimizer.iterations)
 
       # Train one EPOC
+      alpha = 0 # manifold variable
+      if optimizer.iterations.numpy() % config['non_zero_ratio'] == 0:
+        alpha = 0 #random.uniform(0, 0.5)
+
       str_to_print += '; LR: ' + str(optimizer._decayed_lr(tf.float32))
       train_logs['seg_loss'].reset_states()
       tb = time.time()
@@ -234,6 +288,9 @@ def train_val(params):
           n_iters += 1
           tb = time.time()
           if params.train_loss[dataset_id] == 'cros_entr':
+            train_step(model_ftrs, labels, one_label_per_model=one_label_per_model)
+            loss2show = 'seg_loss'
+          elif params.train_loss[dataset_id] == 'manifold_cros_entr':
             train_step(model_ftrs, labels, one_label_per_model=one_label_per_model)
             loss2show = 'seg_loss'
           elif params.train_loss[dataset_id] == 'triplet':
@@ -358,8 +415,8 @@ if __name__ == '__main__':
   #job_part = '10-10_A'
   job_part = config['job_part'] #16-04_a'
 
-  # choose network task from: 'features_extraction', 'unsupervised_classification', 'semantic_segmentation', 'classification'
-  network_task = 'classification'
+  # choose network task from: 'features_extraction', 'unsupervised_classification', 'semantic_segmentation', 'classification'. 'manifold_classification'
+  network_task = 'manifold_classification'
 
   """if len(sys.argv) > 1:
     job = sys.argv[1].lower()

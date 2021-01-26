@@ -6,8 +6,13 @@ trained_model: '../../mesh_walker/runs_aug_360_must/0101-18.01.2021..19.27__shre
 #'../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/'
 #'../../mesh_walker/runs_aug_360_must/0096-12.01.2021..18.04_horse_balls_only_shrec11_16-04_a'
 dataset_path: 'datasets_processed/shrec11/16-04_a/test/*.npz'
+use_pretrained_model: False
 job: 'shrec11'
 job_part: '16-04_a'
+
+#manifold params
+shift_size: 1
+non_zero_ratio: 3
 
 
 #Training params
@@ -21,7 +26,7 @@ iter_2_change_weight: 1_000
 
 
 # Experiment params
-walk_len: 2000
+walk_len: 200
 use_sphere_or_model: 'model' #'sphere' #'model'
 mesh_path: 'datasets_processed/shrec11_raw_5k/T398_simplified_to_5000.npz' #camel
 #'datasets_processed/shrec11_raw_5k/T295_simplified_to_5000.npz' #horse
@@ -34,7 +39,7 @@ mesh_path: 'datasets_processed/shrec11_raw_5k/T398_simplified_to_5000.npz' #came
 # 15 - horse 18 - balls 25 - camel
 target_label: 15
 source_label: 25
-trained_only_2_classes: True
+trained_only_2_classes: False
 
 
 #Attack params 

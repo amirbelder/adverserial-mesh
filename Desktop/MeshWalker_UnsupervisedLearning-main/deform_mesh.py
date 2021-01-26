@@ -115,11 +115,13 @@ def mesh_reconstruction(config):
   dataset.setup_features_params(params, params)
   dataset.mesh_data_to_walk_features.SET_SEED_WALK = False
 
-  prec_arr = [x * 0.1 for x in range(11)]
-  was_made = [False for i in range(10)]
 
   dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, 3, model_fn,
                                    model_must_be_load=True, dump_model_visualization=False)
+
+  prec_arr = [x * 0.1 for x in range(11)]
+  was_made = [False for i in range(10)]
+
 
   #Amir
   # Here I can put the right npz file that holds a mesh with a source Domain mesh

@@ -85,6 +85,7 @@ def set_up_default_params(network_task, run_name, cont_run_number=0, config = No
   if params.network_task == 'manifold_classification':
     params.n_walks_per_model = 1
     params.one_label_per_model = True
+    #params.train_loss = ['manifold_cros_entr']
     params.train_loss = ['cros_entr']
     params.net = 'Manifold_RnnWalkNet'
   elif params.network_task == 'semantic_segmentation':

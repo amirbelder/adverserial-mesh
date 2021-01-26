@@ -147,6 +147,7 @@ def train_val(params):
   for name in time_msrs_names:
     time_msrs[name] = 0
   seg_train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='seg_train_accuracy')
+  manifold_seg_train_accuracy = tf.keras.metrics.CategoricalCrossentropy(name='manifold_seg_train_accuracy')
 
   train_log_names = ['seg_loss']
   train_logs = {name: tf.keras.metrics.Mean(name=name) for name in train_log_names}
@@ -155,19 +156,18 @@ def train_val(params):
   # Train / test functions
   # ----------------------
   if params.last_layer_actication is None:
-    if params.net == 'Manifold_RnnWalkNet':
-      seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-    else:
-      seg_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    seg_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     if params.train_loss == ['triplet']:
       seg_loss = tfa.losses.TripletSemiHardLoss(from_logits=True)
-  else:
-    if params.net == 'Manifold_RnnWalkNet':
+    elif params.train_loss == ['manifold_cros_entr']:
       seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-    else:
-      seg_loss = tf.keras.losses.SparseCategoricalCrossentropy()
+
+  else:
+    seg_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     if params.train_loss == ['triplet']:
       seg_loss = tfa.losses.TripletSemiHardLoss()
+    elif params.train_loss == ['manifold_cros_entr']:
+      seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
 
   #@tf.function
   def train_step(model_ftrs_, labels_, one_label_per_model):
@@ -178,7 +178,7 @@ def train_val(params):
         # Gal, when multiple walks are per walk, the labels are like this (for example if 2 walks per model):
         # labels = [1,1,7,7,8,8,3,3,16,16...]
         labels = tf.reshape(tf.transpose(tf.stack((labels_,)*params.n_walks_per_model)),(-1,))
-        if params.net == 'Manifold_RnnWalkNet':
+        if params.train_loss == ['manifold_cros_entr']:
           predictions = dnn_model(model_ftrs, alpha, config['shift_size'])
         else:
           predictions = dnn_model(model_ftrs)
@@ -188,8 +188,9 @@ def train_val(params):
         predictions = dnn_model(model_ftrs)[:, skip:]
         labels = labels[:, skip + 1:]
 
-      if params.net == 'Manifold_RnnWalkNet':
+      if params.train_loss == ['manifold_cros_entr'] and alpha != 0:
         labels = label_to_one_hot(labels, params)
+        manifold_seg_train_accuracy(labels, predictions)
       else:
         seg_train_accuracy(labels, predictions)
       loss = seg_loss(labels, predictions)
@@ -210,7 +211,7 @@ def train_val(params):
     if one_label_per_model:
       labels = tf.reshape(tf.transpose(tf.stack((labels_,) * params.n_walks_per_model)), (-1,))
       if params.net == 'Manifold_RnnWalkNet':
-        predictions = dnn_model(model_ftrs, alpha=0, shift_size=config['shift_size'])
+        predictions = dnn_model(model_ftrs, alpha=alpha, shift_size=config['shift_size'])
       else:
         predictions = dnn_model(model_ftrs)
     else:
@@ -270,9 +271,9 @@ def train_val(params):
       tf.summary.scalar(name="mem/gpu_tmpr", data=gpu_tmpr, step=optimizer.iterations)
 
       # Train one EPOC
-      alpha = 1 # manifold variable
+      alpha = 0 # manifold variable
       if optimizer.iterations.numpy() % config['non_zero_ratio'] == 0:
-        alpha = 1 #random.uniform(0, 0.5)
+        alpha = 0 #random.uniform(0, 0.5)
 
       str_to_print += '; LR: ' + str(optimizer._decayed_lr(tf.float32))
       train_logs['seg_loss'].reset_states()
@@ -287,6 +288,9 @@ def train_val(params):
           n_iters += 1
           tb = time.time()
           if params.train_loss[dataset_id] == 'cros_entr':
+            train_step(model_ftrs, labels, one_label_per_model=one_label_per_model)
+            loss2show = 'seg_loss'
+          elif params.train_loss[dataset_id] == 'manifold_cros_entr':
             train_step(model_ftrs, labels, one_label_per_model=one_label_per_model)
             loss2show = 'seg_loss'
           elif params.train_loss[dataset_id] == 'triplet':

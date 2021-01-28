@@ -208,7 +208,7 @@ def mesh_reconstruction(config):
 
     gradients = tape.gradient(attack, ftrs)
     print("iter:", num_iter, " attack:", attack.numpy(), " w:", w, " target prec:",
-          (pred[0].numpy())[config['target_label']], " source prec:", (pred[0].numpy())[config['source_label']])
+          (pred[0].numpy())[config['target_label']], " source prec:", (pred[0].numpy())[config['source_label']], " max label:", " label: ", np.argmax(pred))
     l.append(loss.numpy())
 
     mesh_data['vertices'][v_indices[skip:]] += gradients[0][skip:].numpy()
@@ -256,7 +256,7 @@ def check_model_accuracy():
 
 def main():
   np.random.seed(0)
-  utils.config_gpu(1)
+  utils.config_gpu(1, -1)
 
   #get hyper params from yaml
   parser = argparse.ArgumentParser()
@@ -265,6 +265,7 @@ def main():
   config = utils.get_config(opts.config)
 
   #check_model_accuracy()
+  print("source label: ", config['source_label'], " target label: ", config['target_label'], " output dir: ", config['result_path'])
   mesh_reconstruction(config)
 
   return 0

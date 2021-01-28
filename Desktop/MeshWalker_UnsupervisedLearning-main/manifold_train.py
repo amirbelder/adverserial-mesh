@@ -163,13 +163,15 @@ def train_val(params):
       seg_loss = tfa.losses.TripletSemiHardLoss(from_logits=True)
     #Amir - will later change and will depend on alpha != 0
     elif params.train_loss == ['manifold_cros_entr']:
-      seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+      #seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+      seg_loss = tf.keras.losses.KLDivergence(rom_logits=True)
   else:
     seg_loss = tf.keras.losses.SparseCategoricalCrossentropy()
     if params.train_loss == ['triplet']:
       seg_loss = tfa.losses.TripletSemiHardLoss()
     elif params.train_loss == ['manifold_cros_entr']:
-      seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+      #seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+      seg_loss = tf.keras.losses.KLDivergence() #kullback_leibler_divergence
 
   #@tf.function
   def train_step(model_ftrs_, labels_, one_label_per_model):

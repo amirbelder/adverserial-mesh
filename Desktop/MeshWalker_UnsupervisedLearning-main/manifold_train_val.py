@@ -271,9 +271,9 @@ def train_val(params):
       tf.summary.scalar(name="mem/gpu_tmpr", data=gpu_tmpr, step=optimizer.iterations)
 
       # Train one EPOC
-      alpha = 0 # manifold variable
-      if optimizer.iterations.numpy() % config['non_zero_ratio'] == 0:
-        alpha = 0 #random.uniform(0, 0.5)
+      alpha = random.uniform(0, 0.5) # manifold variable
+      #if optimizer.iterations.numpy() % config['non_zero_ratio'] == 0:
+      #  alpha = random.uniform(0, 0.5)
 
       str_to_print += '; LR: ' + str(optimizer._decayed_lr(tf.float32))
       train_logs['seg_loss'].reset_states()

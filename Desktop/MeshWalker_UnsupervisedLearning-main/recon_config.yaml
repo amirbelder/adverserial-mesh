@@ -2,17 +2,21 @@
 #General Info
 result_path: '../../mesh_walker/mesh_reconstruction/'
 precent_result_path: '../../mesh_walker/mesh_reconstruction/percent/'
-trained_model: '../../mesh_walker/runs_aug_360_must/0101-18.01.2021..19.27__shrec11_16-04_a_horse_zebra_5000_faces'
+trained_model: '../../mesh_walker/runs_aug_360_must/0196-30.01.2021..00.57__shrec11_16-04_a'
+#'../../mesh_walker/runs_aug_360_must/0101-18.01.2021..19.27__shrec11_16-04_a_horse_zebra_5000_faces'
 #'../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/'
-#'../../mesh_walker/runs_aug_360_must/0096-12.01.2021..18.04_horse_balls_only_shrec11_16-04_a'
+#'../../mesh_walker/runs_aug_360_must/0096-12.01.2021..18.04_horse_balls_only_shrec11_16-04_a/'
 dataset_path: 'datasets_processed/shrec11/16-04_a/test/*.npz'
 use_pretrained_model: False
 job: 'shrec11'
 job_part: '16-04_a'
+# choose network task from: 'features_extraction', 'unsupervised_classification', 'semantic_segmentation', 'classification', 'manifold_classification'.
+network_task: 'manifold_classification'
 
 #manifold params
 shift_size: 1
 non_zero_ratio: 3
+alpha: 0.5
 
 
 #Training params
@@ -28,17 +32,19 @@ iter_2_change_weight: 1_000
 # Experiment params
 walk_len: 200
 use_sphere_or_model: 'model' #'sphere' #'model'
-mesh_path: 'datasets_processed/shrec11_raw_5k/T398_simplified_to_5000.npz' #camel
+mesh_path: 'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' #horse
+#'datasets_processed/shrec11_raw_5k/T398_simplified_to_5000.npz' #camel
 #'datasets_processed/shrec11_raw_5k/T295_simplified_to_5000.npz' #horse
 
 #500
+#'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz' #dog1
 #'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse
 #'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #This is a camel
+#'datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz' #dog2
 
-
-# 15 - horse 18 - balls 25 - camel
-target_label: 15
-source_label: 25
+# 15 - horse 18 - balls 25 - camel #4  - dog2, 7 -dog1
+target_label: 4
+source_label: 15
 trained_only_2_classes: False
 
 

@@ -161,7 +161,8 @@ def mesh_reconstruction(config):
       tape.watch(ftrs)
       pred = dnn_model(ftrs, classify=True, training=False)
       if config['attack'] == 'sparse_categorical_crossentropy':
-        loss = w * tf.keras.losses.sparse_categorical_crossentropy(target_feature_vector, pred[0])    # 18 = two_balls , 15 - horse
+        #loss = w * tf.keras.losses.sparse_categorical_crossentropy(target_feature_vector, pred[0])    # 18 = two_balls , 15 - horse
+        loss = w * tf.keras.losses.KLDivergence(target_feature_vector, pred[0])
       else: # default
         loss = w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
         #print(pred[0])

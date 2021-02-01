@@ -301,7 +301,7 @@ class RnnManifoldWalkNet(RnnWalkBase):
       self._norm_features = layers.LayerNormalization(axis=-1, trainable=False)
 
   # @tf.function
-  def call(self, model_ftrs, alpha = 0, shift_size = 1, classify=True, skip_1st=True, training=True, mask=None):
+  def call(self, model_ftrs, alpha = 0, shift_size = 0, classify=True, skip_1st=True, training=True, mask=None):
     if self._norm_input:
       model_ftrs = self._norm_features(model_ftrs)
     if skip_1st:
@@ -328,7 +328,7 @@ class RnnManifoldWalkNet(RnnWalkBase):
         mask = mask[:, ::2]
     x3 = self._gru3(x2, training=training, mask=mask)
     x = x3
-    if alpha != 0 :
+    if alpha != 0 or shift_size != 0:
       orig_x = x3
       shifted_x = tf.roll(orig_x, shift=[shift_size, 0], axis=[0, 1])
       x = orig_x * alpha + shifted_x * (1 - alpha)

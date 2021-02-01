@@ -22,7 +22,7 @@ import yaml
 import random
 
 def label_to_one_hot(labels: tf.Tensor, params, alpha=0, shift_size=1):
-  if alpha == 0:
+  if alpha == 0 and shift_size == 0:
     return tf.one_hot(indices=labels, depth=params.n_classes)
   else:
     return get_manifold_labels(tf.one_hot(indices=labels, depth=params.n_classes), alpha, shift_size)
@@ -139,10 +139,10 @@ def train_val(params):
   for name in time_msrs_names:
     time_msrs[name] = 0
   # Amir - later we will just have 2, and we call one or the other acording to the value of alpha
-  if params.train_loss == ['manifold_cros_entr']:
-      seg_train_accuracy = tf.keras.metrics.CategoricalAccuracy(name='seg_train_accuracy')
-  else:
-    seg_train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='seg_train_accuracy')
+  #if params.train_loss == ['manifold_cros_entr']:
+  manifold_seg_train_accuracy = tf.keras.metrics.CategoricalAccuracy(name='seg_train_accuracy')
+  #else:
+  seg_train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='seg_train_accuracy')
 
   train_log_names = ['seg_loss']
   train_logs = {name: tf.keras.metrics.Mean(name=name) for name in train_log_names}
@@ -162,16 +162,16 @@ def train_val(params):
     if params.train_loss == ['triplet']:
       seg_loss = tfa.losses.TripletSemiHardLoss(from_logits=True)
     #Amir - will later change and will depend on alpha != 0
-    elif params.train_loss == ['manifold_cros_entr']:
-      #seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-      seg_loss = tf.keras.losses.KLDivergence(rom_logits=True)
+    #elif params.train_loss == ['manifold_cros_entr'] and alpha != 0:
+    #  #seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+    manifold_seg_loss = tf.keras.losses.KLDivergence(rom_logits=True)
   else:
     seg_loss = tf.keras.losses.SparseCategoricalCrossentropy()
     if params.train_loss == ['triplet']:
       seg_loss = tfa.losses.TripletSemiHardLoss()
-    elif params.train_loss == ['manifold_cros_entr']:
-      #seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-      seg_loss = tf.keras.losses.KLDivergence() #kullback_leibler_divergence
+    #elif params.train_loss == ['manifold_cros_entr']:
+    #  #seg_loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+    manifold_seg_loss = tf.keras.losses.KLDivergence() #kullback_leibler_divergence
 
   #@tf.function
   def train_step(model_ftrs_, labels_, one_label_per_model):
@@ -195,10 +195,13 @@ def train_val(params):
         labels = labels[:, skip + 1:]
       # for manifold training we need one_hot labels
       # Amir - we will later change this, and add "and alpha != 0"
-      if params.train_loss == ['manifold_cros_entr']:
+      if params.train_loss == ['manifold_cros_entr'] and alpha != 0:
           labels = label_to_one_hot(labels=labels, params=params, alpha=alpha, shift_size=shift_size)
-      seg_train_accuracy(labels, predictions)
-      loss = seg_loss(labels, predictions)
+          manifold_seg_train_accuracy(labels, predictions)
+          loss = manifold_seg_loss(labels, predictions)
+      else:
+        seg_train_accuracy(labels, predictions)
+        loss = seg_loss(labels, predictions)
       loss += tf.reduce_sum(dnn_model.losses)
 
     gradients = tape.gradient(loss, dnn_model.trainable_variables)
@@ -233,7 +236,7 @@ def train_val(params):
 
     # for manifold training we need one_hot labels
     # Amir - we will later change this, and add "and alpha != 0"
-    if params.train_loss == ['manifold_cros_entr']:
+    if params.train_loss == ['manifold_cros_entr'] and alpha != 0:
           labels = label_to_one_hot(labels=labels, params=params, alpha=alpha, shift_size=shift_size)
     best_pred = tf.math.argmax(predictions, axis=-1)
     test_accuracy(labels, predictions)
@@ -285,8 +288,10 @@ def train_val(params):
 
       # Train one EPOC
       #alpha = 0  # manifold variable
-      #if optimizer.iterations.numpy() % config['non_zero_ratio'] == 0:
-      #    alpha = 0  # random.uniform(0, 0.5)
+      if optimizer.iterations.numpy() % config['non_zero_ratio'] == 0:
+          alpha = random.uniform(0, 0.5)
+      else:
+        alpha = 0
 
       str_to_print += '; LR: ' + str(optimizer._decayed_lr(tf.float32))
       train_logs['seg_loss'].reset_states()

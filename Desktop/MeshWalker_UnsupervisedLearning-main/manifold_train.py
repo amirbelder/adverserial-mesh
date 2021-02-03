@@ -243,9 +243,9 @@ def train_val(params):
     #Amir
     # the confusion had to recive zero label, that's a problem
     # So for now I'm skipping this part if we are just doing reconstruction
-    if show_confusion_martix is not False:
-      confusion = tf.math.confusion_matrix(labels=tf.reshape(labels, (-1,)), predictions=tf.reshape(best_pred, (-1,)),
-                                           num_classes=params.n_classes)
+    #if show_confusion_martix is not False:
+    #  confusion = tf.math.confusion_matrix(labels=tf.reshape(labels, (-1,)), predictions=tf.reshape(best_pred, (-1,)),
+    #                                       num_classes=params.n_classes)
 
     return confusion
   # -------------------------------------
@@ -263,6 +263,9 @@ def train_val(params):
     epoch = 0
     while optimizer.iterations.numpy() < params.iters_to_train + train_epoch_size * 2:
       epoch += 1
+      if epoch % 10 == 0:
+        print(params.logdir)
+        print(config['description'])
       str_to_print = str(os.getpid()) + ') Epoch' + str(epoch) + ', iter ' + str(optimizer.iterations.numpy())
 
       # Save some logs & infos
@@ -286,11 +289,15 @@ def train_val(params):
       tf.summary.scalar(name="mem/gpu_tmpr", data=gpu_tmpr, step=optimizer.iterations)
 
       # Train one EPOC
-      #alpha = 0  # manifold variable
-      if optimizer.iterations.numpy() % config['non_zero_ratio'] == 0:
-          alpha = random.uniform(0, 0.5)
-      else:
-        alpha = 0
+      if config['sparse_or_manifold'] == "sparse_only":
+        alpha = 0  # manifold variable
+      elif config['sparse_or_manifold'] == "manifold_only":
+        alpha = random.uniform(0, 0.5)
+      elif config['sparse_or_manifold'] == "both":
+        if optimizer.iterations.numpy() % config['non_zero_ratio'] == 0:
+            alpha = random.uniform(0, 0.5)
+        else:
+          alpha = 0
 
       str_to_print += '; LR: ' + str(optimizer._decayed_lr(tf.float32))
       train_logs['seg_loss'].reset_states()
@@ -367,20 +374,20 @@ def run_one_job(job, job_part, network_task):
   # Classifications
   job = job.lower()
   if job == 'modelnet40' or job == 'modelnet':
-    params = params_setting.modelnet_params(network_task)
+    params = params_setting.modelnet_params(network_task, config)
 
   if job == 'shrec11':
-    params = params_setting.shrec11_params(job_part, network_task)
+    params = params_setting.shrec11_params(job_part, network_task, config)
 
   if job == 'cubes':
-    params = params_setting.cubes_params(network_task)
+    params = params_setting.cubes_params(network_task, config)
 
   # Semantic Segmentations
   if job == 'human_seg':
-    params = params_setting.human_seg_params(network_task)
+    params = params_setting.human_seg_params(network_task, config)
 
   if job == 'coseg':
-    params = params_setting.coseg_params(job_part, network_task)   #  job_part can be : 'aliens' or 'chairs' or 'vases'
+    params = params_setting.coseg_params(job_part, network_task, config)   #  job_part can be : 'aliens' or 'chairs' or 'vases'
 
 
   # train only on a subset of the classes

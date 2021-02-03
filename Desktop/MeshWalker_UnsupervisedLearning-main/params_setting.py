@@ -17,12 +17,14 @@ else:
   run_folder = 'runs_aug_360_must'
 
 
-def use_pretrained_model(config):
+def use_pretrained_model(config, run_name):
   import json
   import tensorflow as tf
   with open(config['trained_model'] + '/params.txt') as fp:
     params = EasyDict(json.load(fp))
     params.net_start_from_prev_net = tf.train.latest_checkpoint(config['trained_model'])
+    params.logdir = utils.get_run_folder(params.run_root_path + '/', '__' + run_name, params.cont_run_number)
+    params.model_fn = params.logdir + '/learned_model.keras'
 
   return params
 """
@@ -45,7 +47,7 @@ def set_up_default_params(network_task, run_name, cont_run_number=0, config = No
   '''
   if config is not None:
     if config['use_prev_model'] is True:
-      return use_pretrained_model(config)
+      return use_pretrained_model(config, run_name)
 
   params = EasyDict()
   params.dataset = run_name

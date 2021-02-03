@@ -350,20 +350,20 @@ def run_one_job(job, job_part, network_task):
   # Classifications
   job = job.lower()
   if job == 'modelnet40' or job == 'modelnet':
-    params = params_setting.modelnet_params(network_task)
+    params = params_setting.modelnet_params(network_task, config)
 
   if job == 'shrec11':
-    params = params_setting.shrec11_params(job_part, network_task)
+    params = params_setting.shrec11_params(job_part, network_task, config)
 
   if job == 'cubes':
-    params = params_setting.cubes_params(network_task)
+    params = params_setting.cubes_params(network_task, config)
 
   # Semantic Segmentations
   if job == 'human_seg':
-    params = params_setting.human_seg_params(network_task)
+    params = params_setting.human_seg_params(network_task, config)
 
   if job == 'coseg':
-    params = params_setting.coseg_params(job_part, network_task)   #  job_part can be : 'aliens' or 'chairs' or 'vases'
+    params = params_setting.coseg_params(job_part, network_task, config)   #  job_part can be : 'aliens' or 'chairs' or 'vases'
 
 
   # train only on a subset of the classes

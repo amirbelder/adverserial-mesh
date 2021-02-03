@@ -19,8 +19,10 @@ else:
 
 def use_pretrained_model(config):
   import json
+  import tensorflow as tf
   with open(config['trained_model'] + '/params.txt') as fp:
     params = EasyDict(json.load(fp))
+    params.net_start_from_prev_net = tf.train.latest_checkpoint(config['trained_model'])
 
   return params
 """
@@ -42,7 +44,7 @@ def set_up_default_params(network_task, run_name, cont_run_number=0, config = No
   Define dafault parameters, commonly for many test case
   '''
   if config is not None:
-    if config['use_pretrained_model'] is True:
+    if config['use_prev_model'] is True:
       return use_pretrained_model(config)
 
   params = EasyDict()
@@ -119,7 +121,8 @@ def set_up_default_params(network_task, run_name, cont_run_number=0, config = No
   params.initializers = 'orthogonal'
   params.adjust_vertical_model = False
   if config is not None and config['use_prev_model'] is True:
-    params.net_start_from_prev_net = config['keras_model']
+    import tensorflow as tf
+    params.net_start_from_prev_net = tf.train.latest_checkpoint(config['trained_model'])
   else:
     params.net_start_from_prev_net = None
 
@@ -136,8 +139,8 @@ def set_up_default_params(network_task, run_name, cont_run_number=0, config = No
 
 # Classifications
 # ---------------
-def modelnet_params(network_task):
-  params = set_up_default_params(network_task, 'modelnet', 0)
+def modelnet_params(network_task, config=None):
+  params = set_up_default_params(network_task, 'modelnet', 0, config)
   params.n_classes = 40
 
   params.cycle_opt_prms = EasyDict({'initial_learning_rate': 1e-6,
@@ -192,9 +195,9 @@ def modelnet_params(network_task):
 
   return params
 
-def cubes_params(network_task):
+def cubes_params(network_task, config = None):
   # |V| = 250 , |F| = 500 => seq_len = |V| / 2.5 = 100
-  params = set_up_default_params(network_task, 'cubes', 0)
+  params = set_up_default_params(network_task, 'cubes', 0, config)
   params.n_classes = 22
   params.seq_len = 100
   params.min_seq_len = int(params.seq_len / 2)
@@ -252,9 +255,9 @@ def shrec11_params(split_part, network_task, config = None):
 
 # Semantic Segmentation
 # ---------------------
-def human_seg_params(network_task):
+def human_seg_params(network_task, config = None):
   # |V| = 750 , |F| = 1500 => seq_len = |V| / 2.5 = 300
-  params = set_up_default_params(network_task, 'human_seg', 0)
+  params = set_up_default_params(network_task, 'human_seg', 0, config)
   params.n_classes = 9
   params.seq_len = 300
 
@@ -297,11 +300,11 @@ def human_seg_params(network_task):
   return params
 
 
-def coseg_params(type, network_task): # aliens / chairs / vases
+def coseg_params(type, network_task, config = None): # aliens / chairs / vases
   # |V| = 750 , |F| = 1500 => seq_len = |V| / 2.5 = 300
   sub_folder = 'coseg_' + type
   p = os.path.expanduser('~') + '/mesh_walker/datasets_processed/coseg_from_meshcnn/' + sub_folder + '/'
-  params = set_up_default_params(network_task, 'coseg_' + type, 0)
+  params = set_up_default_params(network_task, 'coseg_' + type, 0, config)
   params.n_classes = 10
   params.seq_len = 300
   params.min_seq_len = int(params.seq_len / 2)

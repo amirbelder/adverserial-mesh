@@ -152,8 +152,7 @@ def train_val(params):
   alpha = config['alpha']
   shift_size = config['shift_size']
   # If we are training over all the classes and are not manifold training we can clac the confusion matrix
-  show_confusion_martix = len(params.classes_indices_to_use) >= 30 and config[
-      'network_task'] is not 'manifold_classification'
+  show_confusion_martix = len(params.classes_indices_to_use) >= 30 and params.net != "Manifold_RnnWalkNet"
 
   # Train / test functions
   # ----------------------
@@ -215,7 +214,7 @@ def train_val(params):
       test_accuracy = tf.keras.metrics.CategoricalAccuracy(name='test_accuracy')
   else:
       test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='test_accuracy')
-  @tf.function
+  #@tf.function
   def test_step(model_ftrs_, labels_, one_label_per_model):
     sp = model_ftrs_.shape
     model_ftrs = tf.reshape(model_ftrs_, (-1, sp[-2], sp[-1]))
@@ -244,7 +243,7 @@ def train_val(params):
     #Amir
     # the confusion had to recive zero label, that's a problem
     # So for now I'm skipping this part if we are just doing reconstruction
-    if show_confusion_martix == False:
+    if show_confusion_martix is not False:
       confusion = tf.math.confusion_matrix(labels=tf.reshape(labels, (-1,)), predictions=tf.reshape(best_pred, (-1,)),
                                            num_classes=params.n_classes)
 
@@ -281,9 +280,9 @@ def train_val(params):
       tf.summary.scalar(name="train/learning_rate", data=optimizer._decayed_lr(tf.float32), step=optimizer.iterations)
       tf.summary.scalar(name="mem/free", data=utils.check_mem_and_exit_if_full(), step=optimizer.iterations)
       gpu_tmpr = utils.get_gpu_temprature()
-      if gpu_tmpr > 95:
-        print('GPU temprature is too high!!!!!')
-        exit(0)
+      #if gpu_tmpr > 95:
+      #  print('GPU temprature is too high!!!!!')
+      #  exit(0)
       tf.summary.scalar(name="mem/gpu_tmpr", data=gpu_tmpr, step=optimizer.iterations)
 
       # Train one EPOC

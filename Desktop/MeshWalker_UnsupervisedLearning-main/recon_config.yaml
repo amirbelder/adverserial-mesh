@@ -8,7 +8,8 @@ result_path: '../../mesh_walker/horse_to_dog2/'
 #'../../mesh_walker/dog2_to_horse/'
 
 precent_result_path: '../../mesh_walker/mesh_reconstruction/percent/'
-trained_model: '../../mesh_walker/runs_aug_360_must/0142-27.01.2021..11.04__shrec11_16-04_a'
+trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_kl_loss_only_30_labels'
+#'../../mesh_walker/runs_aug_360_must/0142-27.01.2021..11.04__shrec11_16-04_a' #mesh_walk regular 30 classes
 
 #'../../mesh_walker/runs_aug_360_must/0101-18.01.2021..19.27__shrec11_16-04_a_horse_zebra_5000_faces'
 #'../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/'
@@ -19,6 +20,12 @@ job: 'shrec11'
 job_part: '16-04_a'
 # choose network task from: 'features_extraction', 'unsupervised_classification', 'semantic_segmentation', 'classification', 'manifold_classification'.
 network_task: 'manifold_classification'
+
+
+#retrain params
+use_prev_model: False
+keras_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_kl_loss_only_30_labels/learned_model2keep__00055005.keras'
+#'../../mesh_walker/runs_aug_360_must/0196-30.01.2021..00.57__shrec11_16-04_a/learned_model2keep__00060000.keras'
 
 #manifold params
 shift_size: 1
@@ -47,18 +54,20 @@ mesh_path: 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #
 
 #500
 #'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz' #dog1
-#'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse
+#'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse+
 #'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #This is a camel
 #'datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz' #dog2
+#'datasets_processed/shrec11/16-04_a/train/T36_not_changed_500.npz' #woman
+#'datasets_processed/shrec11/16-04_a/train/T437_not_changed_500.npz' #man
 
 
 # 15 - horse, 18 - balls, 25 - camel, 7 - dog1, 4 - dog2, 23 - woman, 1- man, 9- bird2, 29- bird1
-target_label: 9
-source_label: 29
+target_label: 4
+source_label: 25
 
 trained_only_2_classes: False
 use_last: False
-show_model_every: 1_000
+show_model_every: 5_000
 
 #Attack params 
 loss: 'sparse_categorical_crossentropy'

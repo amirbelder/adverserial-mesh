@@ -82,7 +82,7 @@ def set_up_default_params(network_task, run_name, cont_run_number=0, config = No
     params.one_label_per_model = True
     params.train_loss = ['cros_entr']
     params.net = 'RnnWalkNet'
-  if params.network_task == 'manifold_classification':
+  elif params.network_task == 'manifold_classification':
     params.n_walks_per_model = 1
     params.one_label_per_model = True
     #params.train_loss = ['manifold_cros_entr']
@@ -227,14 +227,12 @@ def shrec11_params(split_part, network_task, config = None):
   params.datasets2use['train'] = ['datasets_processed/shrec11/' + split_part + '/train/*.npz']
   params.datasets2use['test']  = ['datasets_processed/shrec11/' + split_part + '/test/*.npz']
   #5000
-<<<<<<< HEAD
 
-  params.datasets2use['train'] = ['datasets_processed/shrec11_raw_2k/' + split_part + '/train/*.npz']
-  params.datasets2use['test']  = ['datasets_processed/shrec11_raw_2k/' + split_part + '/test/*.npz']
-=======
+  #params.datasets2use['train'] = ['datasets_processed/shrec11_raw_2k/' + split_part + '/train/*.npz']
+  #params.datasets2use['test'] = ['datasets_processed/shrec11_raw_2k/' + split_part + '/test/*.npz']
+
   #params.datasets2use['train'] = ['datasets_processed/shrec11_raw_2k/' + split_part + '/train/*.npz']
   #params.datasets2use['test']  = ['datasets_processed/shrec11_raw_2k/' + split_part + '/test/*.npz']
->>>>>>> e9f337cd3999a90425eb741600a5bfa7302b0c5f
 
   params.train_data_augmentation = {'rotation': MAX_AUGMENTATION}
 

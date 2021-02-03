@@ -118,7 +118,11 @@ def set_up_default_params(network_task, run_name, cont_run_number=0, config = No
 
   params.initializers = 'orthogonal'
   params.adjust_vertical_model = False
-  params.net_start_from_prev_net = None
+  if config is not None and config['use_prev_model'] is True:
+    params.net_start_from_prev_net = config['keras_model']
+  else:
+    params.net_start_from_prev_net = None
+
 
   params.net_gru_dropout = 0
   params.uniform_starting_point = False

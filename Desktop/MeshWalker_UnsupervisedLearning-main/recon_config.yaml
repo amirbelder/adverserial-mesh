@@ -13,6 +13,11 @@ job_part: '16-04_a'
 # choose network task from: 'features_extraction', 'unsupervised_classification', 'semantic_segmentation', 'classification', 'manifold_classification'.
 network_task: 'manifold_classification'
 
+
+#retrain params
+use_prev_model: True
+keras_model: '../../mesh_walker/runs_aug_360_must/0196-30.01.2021..00.57__shrec11_16-04_a/learned_model2keep__00060000.keras'
+
 #manifold params
 shift_size: 1
 non_zero_ratio: 3
@@ -32,20 +37,22 @@ iter_2_change_weight: 1_000
 # Experiment params
 walk_len: 200
 use_sphere_or_model: 'model' #'sphere' #'model'
-mesh_path: 'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' #horse
+mesh_path: 'datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz' #dog2
 #'datasets_processed/shrec11_raw_5k/T398_simplified_to_5000.npz' #camel
 #'datasets_processed/shrec11_raw_5k/T295_simplified_to_5000.npz' #horse
 
 #500
 #'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz' #dog1
-#'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse
+#'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse+
 #'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #This is a camel
 #'datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz' #dog2
+#'datasets_processed/shrec11/16-04_a/train/T36_not_changed_500.npz' #woman
+#'datasets_processed/shrec11/16-04_a/train/T437_not_changed_500.npz' #man
 
-# 15 - horse 18 - balls 25 - camel #4  - dog2, 7 -dog1
-target_label: 4
-source_label: 15
-trained_only_2_classes: False
+# 15 - horse 18 - balls 25 - camel #4  - dog2, 7 -dog1, 23 - woman, 1 - man
+target_label: 7
+source_label: 4
+trained_only_2_classes: True
 
 
 #Attack params 

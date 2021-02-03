@@ -37,7 +37,22 @@ def main():
                  'datasets_processed/shrec11/16-04_a/train/T579_not_changed_500.npz',
                  'datasets_processed/shrec11/16-04_a/train/T402_not_changed_500.npz',
                  'datasets_processed/shrec11/16-04_a/train/T529_not_changed_500.npz']"""
-    npz_paths = ['datasets_processed/shrec11_raw_2k/T295_simplified_to_2000.npz']
+    #npz_paths = ['datasets_processed/shrec11_raw_2k/T295_simplified_to_2000.npz']
+    #bird2
+    npz_paths = ['datasets_processed/shrec11/16-04_a/train/T500_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T520_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T358_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T546_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T80_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T96_not_changed_500.npz']
+    #bird1 #no legs and wings down
+    #npz_paths = ['datasets_processed/shrec11/16-04_a/train/T159_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T118_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T76_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T66_not_changed_500.npz'	,'datasets_processed/shrec11/16-04_a/train/T79_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T60_not_changed_500.npz']
+
+    #dog1 weird legs and no tail
+    #npz_paths = ['datasets_processed/shrec11/16-04_a/train/T476_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T144_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz']
+    #npz_paths = ['datasets_processed/shrec11/16-04_a/train/T476_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T144_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T331_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T125_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T393_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T436_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T197_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T367_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T409_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T373_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T193_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T309_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T99_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T354_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T203_not_changed_500.npz']
+
+    #dog2
+    #npz_paths = ['datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T93_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T207_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T507_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T8_not_changed_500.npz']
+
+    #man
+    #npz_paths = ['datasets_processed/shrec11/16-04_a/train/T360_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T342_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T437_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T59_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T451_not_changed_500.npz']
+
     #2000
     #camel
     #'datasets_processed/shrec11_raw_2k/T398_simplified_to_2000.npz'

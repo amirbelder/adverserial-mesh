@@ -214,7 +214,7 @@ def cubes_params(network_task):
 def shrec11_params(split_part, network_task, config = None):
   # split_part is one of the following:
   # 10-10_A / 10-10_B / 10-10_C
-  # 16-04_a / 16-04_B / 16-04_C
+  # 16-04_a / 16-04_b / 16-04_C
 
   # |V| = 250 , |F| = 500 => seq_len = |V| / 2.5 = 100
   params = set_up_default_params(network_task, 'shrec11_' + split_part, 0, config)
@@ -231,6 +231,10 @@ def shrec11_params(split_part, network_task, config = None):
   params.datasets2use['train'] = ['datasets_processed/shrec11/' + split_part + '/train/*.npz']
   params.datasets2use['test']  = ['datasets_processed/shrec11/' + split_part + '/test/*.npz']
   #5000
+
+  #params.datasets2use['train'] = ['datasets_processed/shrec11_raw_2k/' + split_part + '/train/*.npz']
+  #params.datasets2use['test'] = ['datasets_processed/shrec11_raw_2k/' + split_part + '/test/*.npz']
+
   #params.datasets2use['train'] = ['datasets_processed/shrec11_raw_2k/' + split_part + '/train/*.npz']
   #params.datasets2use['test']  = ['datasets_processed/shrec11_raw_2k/' + split_part + '/test/*.npz']
 

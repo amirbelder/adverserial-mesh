@@ -1,4 +1,6 @@
 import os, shutil, time, copy, glob
+
+import yaml
 from easydict import EasyDict
 import json
 import platform
@@ -16,6 +18,7 @@ import argparse
 
 import rnn_model
 import utils
+import yaml
 import dataset
 import dataset_prepare
 
@@ -36,7 +39,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='recon_config.yaml', help='Path to the config file.')
 opts = parser.parse_args()
 config = get_config(opts.config)"""
-
 
 def print_enters(to_print):
   print("\n\n\n\n")

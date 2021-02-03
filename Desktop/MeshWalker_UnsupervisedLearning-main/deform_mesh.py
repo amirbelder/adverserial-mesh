@@ -85,6 +85,24 @@ def dump_prec(mesh_data, path, cpos, iter, target_pred = -1, source_pred = -1):
   dump_mesh.i += 1
 dump_mesh.i = 0
 
+def deform_add_fields_and_dump_model(mesh_data, fileds_needed, out_fn, dump_model=True):
+  m = {}
+  for k, v in mesh_data.items():
+    if k in fileds_needed:
+      m[k] = v
+  for field in fileds_needed:
+    if field not in m.keys():
+      if field == 'labels_fuzzy':
+        m[field] = np.zeros((0,))
+      if field == 'walk_cache':
+        m[field] = np.zeros((0,))
+      if field == 'kdtree_query':
+        dataset_prepare.prepare_edges_and_kdtree(m)
+
+  if dump_model:
+    np.savez(out_fn, **m)
+
+
 def calc_ftr_vector(params, dnn_model, npz_fn):
   params = copy.deepcopy(params)
   params.n_walks_per_model = 16
@@ -99,6 +117,40 @@ def calc_ftr_vector(params, dnn_model, npz_fn):
 
   return feature_vector
 
+
+def get_res_path(config):
+  shrec11_labels = [
+  'armadillo',  'man',      'centaur',    'dinosaur',   'dog2',
+  'ants',       'rabbit',   'dog1',       'snake',      'bird2',
+  'shark',      'dino_ske', 'laptop',     'santa',      'flamingo',
+  'horse',      'hand',     'lamp',       'two_balls',  'gorilla',
+  'alien',      'octopus',  'cat',        'woman',      'spiders',
+  'camel',      'pliers',   'myScissor',  'glasses',    'bird1'
+  ]
+
+  res_path = '../../mesh_walker/' + shrec11_labels[config['source_label']] + '_to_' + shrec11_labels[config['target_label']]
+  return res_path
+
+def get_mesh_path_500(config):
+  if config['source_label'] == 1:
+    return 'datasets_processed/shrec11/16-04_a/train/T437_not_changed_500.npz' #man
+  if config['source_label'] == 4:
+    return 'datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz' #dog2
+  if config['source_label'] == 7:
+    return 'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz' #dog1
+  if config['source_label'] == 9:
+    #return 'datasets_processed/shrec11/16-04_a/train/T520_not_changed_500.npz' #bird2
+    return 'datasets_processed/shrec11/16-04_a/train/T358_not_changed_500.npz' # bird2 upsidedown
+  if config['source_label'] == 15:
+    return 'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse
+  if config['source_label'] == 23:
+    return 'datasets_processed/shrec11/16-04_a/train/T36_not_changed_500.npz' # woman
+  if config['source_label'] == 25:
+    return 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #camel
+  if config['source_label'] == 29:
+    return 'datasets_processed/shrec11/16-04_a/train/T60_not_changed_500.npz' #bird1
+  return '../../mesh_walker/man_to_man/last_model.npz'
+  #return None
 
 def mesh_reconstruction(config):
   with open(config['trained_model'] + '/params.txt') as fp:
@@ -121,17 +173,23 @@ def mesh_reconstruction(config):
 
   prec_arr = [x * 0.1 for x in range(11)]
   was_made = [False for i in range(10)]
+  result_path=get_res_path(config)
+  if os.path.isdir(result_path):
+      shutil.rmtree(result_path)
 
-
-  #Amir
-  # Here I can put the right npz file that holds a mesh with a source Domain mesh
-  if config['use_sphere_or_model'] == 'model':
-    orig_mesh_data = np.load(config['mesh_path'], encoding='latin1', allow_pickle=True)
+  if config['use_last'] is True and os.listdir(result_path).__contains__('last_model.npz'):
+    orig_mesh_data = np.load(result_path + '/last_model.npz', encoding='latin1', allow_pickle=True)
     mesh_data = {k: v for k, v in orig_mesh_data.items()}
-    #mesh_data['vertices'] += np.random.normal(size=mesh_data['vertices'].shape) * .02
+  else:
+      # Here I can put the right npz file that holds a mesh with a source Domain mesh
+    if config['use_sphere_or_model'] == 'model':
+      mesh_path = get_mesh_path_500(config=config)
+      orig_mesh_data = np.load(mesh_path, encoding='latin1', allow_pickle=True)
+      mesh_data = {k: v for k, v in orig_mesh_data.items()}
+        #mesh_data['vertices'] += np.random.normal(size=mesh_data['vertices'].shape) * .02
 
-  elif config['use_sphere_or_model'] == 'sphere':
-    mesh_data = generate_sphere()
+    elif config['use_sphere_or_model'] == 'sphere':
+      mesh_data = generate_sphere()
 
   #utils.visualize_model(orig_mesh_data['vertices'], orig_mesh_data['faces'])
   #utils.visualize_model(mesh_data['vertices'], mesh_data['faces'])
@@ -140,9 +198,6 @@ def mesh_reconstruction(config):
   target_feature_vector = tf.one_hot(config['target_label'], 30)
 
   skip = int(params.seq_len / 2)
-  if os.path.isdir(config['result_path']):
-    shutil.rmtree(config['result_path'])
-
 
   l = []
   cpos = None
@@ -151,6 +206,8 @@ def mesh_reconstruction(config):
   num_iter_no_change = 0
   last_dev_res = 0
   skipped_iters = 0
+  res_path = get_res_path(config)
+  fields_needed = ['vertices', 'faces', 'edges', 'kdtree_query', 'label', 'labels', 'dataset_name', 'labels_fuzzy']
 
   for num_iter in range(config['max_iter']):
     features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
@@ -208,8 +265,9 @@ def mesh_reconstruction(config):
         w *= 10
 
     gradients = tape.gradient(attack, ftrs)
+    gpu_tmpr = utils.get_gpu_temprature()
     print("iter:", num_iter, " attack:", attack.numpy(), " w:", w, " target prec:",
-          (pred[0].numpy())[config['target_label']], " source prec:", (pred[0].numpy())[config['source_label']])
+          (pred[0].numpy())[config['target_label']], " source prec:", (pred[0].numpy())[config['source_label']], " max label:", np.argmax(pred), " gpu_temp: ", gpu_tmpr)
     l.append(loss.numpy())
 
     mesh_data['vertices'][v_indices[skip:]] += gradients[0][skip:].numpy()
@@ -219,23 +277,24 @@ def mesh_reconstruction(config):
 
     curr_iter = num_iter - (num_iter % config['image_save_iter'])
     if curr_iter / config['image_save_iter'] >= last_dev_res + 1 or num_iter==0:
-      cpos = dump_mesh(mesh_data, config['result_path'], cpos, num_iter, target_pred, source_pred)
+      cpos = dump_mesh(mesh_data, result_path, cpos, num_iter, target_pred, source_pred)
       last_dev_res = num_iter / config['image_save_iter']
+      deform_add_fields_and_dump_model(mesh_data=mesh_data, fileds_needed=fields_needed, out_fn=result_path + '/last_model.npz')#"+ str(num_iter))
 
-    curr_prec_range_index = int(source_pred*10)
-    if prec_arr[curr_prec_range_index]< source_pred <prec_arr[curr_prec_range_index+1] and was_made[curr_prec_range_index] is False:
-      dump_prec(mesh_data, config['precent_result_path'], cpos, num_iter, target_pred, source_pred)
+    """curr_prec_range_index = int(source_pred*10)
+    if prec_arr[curr_prec_range_index] < source_pred <prec_arr[curr_prec_range_index+1] and was_made[curr_prec_range_index] is False:
+      dump_prec(mesh_data, result_path + '/percent/', cpos, num_iter, target_pred, source_pred)
       was_made[curr_prec_range_index] = False
 
-    """if num_iter % config['image_save_iter'] == 0:
+    if num_iter % config['image_save_iter'] == 0:
       cpos = dump_mesh(mesh_data, config['result_path'], cpos, num_iter)"""
 
-  if 1:
-    plt.plot(l)
-    plt.show()
-    #utils.visualize_model(mesh_data['vertices'], mesh_data['faces'])
+    if config['show_model_every'] > 0 and num_iter % config['show_model_every'] == 0:
+      plt.plot(l)
+      plt.show()
+      utils.visualize_model(mesh_data['vertices'], mesh_data['faces'])
 
-  res_path = config['result_path']
+  #res_path = config['result_path']
   cmd = f'ffmpeg -framerate 24 -i {res_path}img_%05d.jpg {res_path}mesh_reconstruction.mp4'
   os.system(cmd)
   return
@@ -257,7 +316,7 @@ def check_model_accuracy():
 
 def main():
   np.random.seed(0)
-  utils.config_gpu(1)
+  utils.config_gpu(1, -1)
 
   #get hyper params from yaml
   parser = argparse.ArgumentParser()
@@ -266,6 +325,7 @@ def main():
   config = utils.get_config(opts.config)
 
   #check_model_accuracy()
+  print("source label: ", config['source_label'], " target label: ", config['target_label'], " output dir: ", get_res_path(config))
   mesh_reconstruction(config)
 
   return 0

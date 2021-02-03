@@ -50,13 +50,18 @@ def get_config(config):
     return yaml.safe_load(stream)
 
 
-def config_gpu(use_gpu=True):
+def config_gpu(use_gpu=True, gpu_num_to_use = 0):
   print('tf.__version__', tf.__version__)
   np.set_printoptions(suppress=True)
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
   try:
     if use_gpu:
       gpus = tf.config.experimental.list_physical_devices('GPU')
+      #if gpu_num_to_use <= len(gpus) and gpu_num_to_use >= 0:
+        #gpus = gpus[gpu_num_to_use]
+        #os.environ['CUDA_VISIBLE_DEVICES'] = gpu_num_to_use
+      #else:
+      #  gpus = gpus[0]
       for gpu in gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
     else:

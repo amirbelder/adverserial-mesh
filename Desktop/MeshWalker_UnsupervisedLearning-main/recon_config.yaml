@@ -7,9 +7,8 @@ result_path: '../../mesh_walker/horse_to_dog2/'
 #'../../mesh_walker/dog2_to_camel/'
 #'../../mesh_walker/dog2_to_horse/'
 
-precent_result_path: '../../mesh_walker/mesh_reconstruction/percent/'
-use_prev_model: True
-trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
+use_prev_model: False
+trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_kl_loss_only_30_labels'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_lk_and_sparse_loss_30_labels'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_kl_loss_only_30_labels'
@@ -19,7 +18,7 @@ trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold
 #'../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/'
 #'../../mesh_walker/runs_aug_360_must/0096-12.01.2021..18.04_horse_balls_only_shrec11_16-04_a/'
 
-description: "sparse only dog1 and dog2 after both sparse and manifold, all 30"
+description: "manifold and sparse, all 30, again"
 dataset_path: 'datasets_processed/shrec11/16-04_a/test/*.npz'
 
 job: 'shrec11'
@@ -27,28 +26,37 @@ job_part: '16-04_a'
 # choose network task from: 'features_extraction', 'unsupervised_classification', 'semantic_segmentation', 'classification', 'manifold_classification'.
 network_task: 'manifold_classification'
 
+# 2 labels training params
+# 15 - horse, 18 - balls, 25 - camel, 7 - dog1, 4 - dog2, 23 - woman, 1- man, 9- bird2, 29- bird1
+target_label: 4
+source_label: 7
 
+trained_only_2_classes: False
 
-#manifold params
+# Manifold params
 shift_size: 1
 non_zero_ratio: 3
 alpha: 0.5
+#'sparse_only' #'manifold_only' #'both'
+sparse_or_manifold: 'both'
+manifold_training: True
 
-
-#Training params
-learning_weight: 0.1
-weight_threshold: 2
-max_label_diff: 0.2
+# Deform Training params
+learning_weight: 0.01
+weight_threshold: 0.2
+max_label_diff: 0.001
 iterations_with_no_changes: 25
-no_change_threshold: 0.01
-max_iter: 100_000
+no_change_pred_threshold: 0.0001
+pred_close_enough_to_target: 0.9
+max_iter: 10_000
 iter_2_change_weight: 1_000
+show_model_every: 5_000
 
-
-# Experiment params
 walk_len: 2000
 use_sphere_or_model: 'model' #'sphere' #'model'
 
+
+use_last: False
 mesh_path: 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #This is a camel
 
 #'datasets_processed/shrec11_raw_5k/T398_simplified_to_5000.npz' #camel
@@ -63,20 +71,12 @@ mesh_path: 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #
 #'datasets_processed/shrec11/16-04_a/train/T437_not_changed_500.npz' #man
 
 
-# 15 - horse, 18 - balls, 25 - camel, 7 - dog1, 4 - dog2, 23 - woman, 1- man, 9- bird2, 29- bird1
-target_label: 4
-source_label: 7
-
-trained_only_2_classes: True
-use_last: False
-show_model_every: 5_000
-
 #Attack params 
 loss: 'sparse_categorical_crossentropy'
+# 'sparse_categorical_crossentropy', 'kl_divergence', 'none' (for MSE)
+# add chamfer distance as an option?
+#check why sparse doesn't work
 attack: 'none'
-sparse_or_manifold: 'manifold_only'
-#'sparse_only' #'manifold_only' #'both'
-
 
 # logger options
 image_save_iter:  100       # How often do you want to save output images during training
@@ -87,11 +87,3 @@ log_iter: 1                   # How often do you want to log the training stats
 
 #Addons
 generate_csv_file2label : False
-
-#Manifold training
-manifold_training: True
-
-#retrain params
-#use_prev_model: False
-#keras_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_kl_loss_only_30_labels/learned_model2keep__00055005.keras'
-#'../../mesh_walker/runs_aug_360_must/0196-30.01.2021..00.57__shrec11_16-04_a/learned_model2keep__00060000.keras'

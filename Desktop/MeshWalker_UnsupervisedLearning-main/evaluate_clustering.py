@@ -179,6 +179,7 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
     name, ftrs, gt = data
     model_fn = name.numpy()[0].decode()
     model_name, n_faces = utils.get_model_name_from_npz_fn(model_fn)
+    print(model_name)
     assert ftrs.shape[0] == 1, 'Must have one model per batch for test'
     if WALK_LEN_PROP_TO_NUM_OF_TRIANLES:
       n2keep = int(n_faces / 2.5)
@@ -228,7 +229,7 @@ def calc_accuracy_test(dataset_folder=False, logdir=None, labels=None, iter2use=
     mean_pred = np.mean(predictions, axis=0)
     max_hit = np.argmax(mean_pred)
     # Gals changes
-    model_name = labels[int(gt)]
+    #model_name = labels[int(gt)]
     # End
 
     if model_name not in pred_per_model_name.keys():

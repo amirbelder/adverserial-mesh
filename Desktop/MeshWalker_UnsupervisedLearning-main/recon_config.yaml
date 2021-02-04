@@ -9,7 +9,7 @@ result_path: '../../mesh_walker/horse_to_dog2/'
 
 precent_result_path: '../../mesh_walker/mesh_reconstruction/percent/'
 use_prev_model: True
-trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
+trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_only_30_then_2_only_manifold_dog1_dog2'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_lk_and_sparse_loss_30_labels'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_kl_loss_only_30_labels'
@@ -63,8 +63,8 @@ mesh_path: 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #
 
 
 # 15 - horse, 18 - balls, 25 - camel, 7 - dog1, 4 - dog2, 23 - woman, 1- man, 9- bird2, 29- bird1
-target_label: 4
-source_label: 7
+target_label: 7
+source_label: 4
 
 
 trained_only_2_classes: True

@@ -165,7 +165,7 @@ def mesh_reconstruction(config):
   dataset.mesh_data_to_walk_features.SET_SEED_WALK = False
 
 
-  dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, 3, model_fn,
+  dnn_model = rnn_model.RnnManifoldWalkNet(params, params.n_classes, 3, model_fn,
                                    model_must_be_load=True, dump_model_visualization=False)
 
   prec_arr = [x * 0.1 for x in range(11)]
@@ -192,7 +192,8 @@ def mesh_reconstruction(config):
   #utils.visualize_model(mesh_data['vertices'], mesh_data['faces'])
 
   #target_feature_vector = calc_ftr_vector(params, dnn_model, npz_fn)
-  target_feature_vector = tf.one_hot(config['target_label'], 30)
+  target_feature_vector = tf.one_hot(indices=config['target_label'], depth=params.n_classes)
+  #return tf.one_hot(indices=labels, depth=params.n_classes)
 
   skip = int(params.seq_len / 2)
 
@@ -204,6 +205,9 @@ def mesh_reconstruction(config):
   skipped_iters = 0
   res_path = get_res_path(config)
   fields_needed = ['vertices', 'faces', 'edges', 'kdtree_query', 'label', 'labels', 'dataset_name', 'labels_fuzzy']
+
+  # Defining attacks
+  kl_divergence_loss = tf.keras.losses.KLDivergence()
 
   for num_iter in range(config['max_iter']):
     features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
@@ -217,14 +221,13 @@ def mesh_reconstruction(config):
 
       # Produce the attack
       if config['attack'] == 'sparse_categorical_crossentropy':
-        temp_pred = pred[0]
-        print(temp_pred.shape)
-        print(target_feature_vector.shape)
-        attack = w * tf.keras.losses.sparse_categorical_crossentropy(target_feature_vector, temp_pred)
+        attack = w * tf.keras.losses.sparse_categorical_crossentropy(config['target_label'], pred)
       elif config['attack'] == 'kl_divergence':
-        attack = w * tf.keras.losses.KLDivergence(target_feature_vector, pred[0])
+        kl_divergence_loss = tf.keras.losses.KLDivergence()
+        attack = w * kl_divergence_loss(target_feature_vector, pred[0])
       else: # default - MSE
         attack = w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
+      # No chamfer dist for now, as it's supposed to be between 2 sets of points, and not preds
 
     target_pred_brfore_attack = (pred[0].numpy())[config['target_label']]
     source_pred_brfore_attack = (pred[0].numpy())[config['source_label']]

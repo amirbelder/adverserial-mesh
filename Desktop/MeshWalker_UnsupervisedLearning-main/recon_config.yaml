@@ -8,7 +8,8 @@ result_path: '../../mesh_walker/horse_to_dog2/'
 #'../../mesh_walker/dog2_to_horse/'
 
 use_prev_model: True
-trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
+trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_then_kl_div_dog1_horse'
+#'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_and_kl_30_then_2_only_manifold_dog1_dog2'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_lk_and_sparse_loss_30_labels'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_kl_loss_only_30_labels'
@@ -28,8 +29,8 @@ network_task: 'manifold_classification'
 
 # 2 labels training params
 # 15 - horse, 18 - balls, 25 - camel, 7 - dog1, 4 - dog2, 23 - woman, 1- man, 9- bird2, 29- bird1
-target_label: 4
-source_label: 7
+target_label: 7
+source_label: 15
 
 trained_only_2_classes: True
 
@@ -42,15 +43,15 @@ sparse_or_manifold: 'sparse_only'
 manifold_training: True
 
 # Deform Training params
-learning_weight: 0.001
-weight_threshold: 0.02
+learning_weight: 0.0001
+weight_threshold: 0.002
 max_label_diff: 0.0001
 iterations_with_no_changes: 25
-no_change_pred_threshold: 0.0001
+no_change_pred_threshold: 0.0003
 pred_close_enough_to_target: 0.9
-max_iter: 10_000
+max_iter: 15_000
 iter_2_change_weight: 1_000
-show_model_every: 5_000
+show_model_every: 15_000
 
 walk_len: 2000
 use_sphere_or_model: 'model' #'sphere' #'model'
@@ -77,9 +78,13 @@ loss: 'sparse_categorical_crossentropy'
 # add chamfer distance as an option?
 #check why sparse doesn't work
 attack: 'kl_divergence'
+sparse_alpha: 0
+kl_div_alpha: 1
+mse_alpha: 0
 
 # logger options
 image_save_iter:  100       # How often do you want to save output images during training
+plot_iter: 10
 image_display_iter: 100       # How often do you want to display output images during training
 display_size: 15              # How many images do you want to display each time
 snapshot_save_iter: 10_000    # How often do you want to save trained models

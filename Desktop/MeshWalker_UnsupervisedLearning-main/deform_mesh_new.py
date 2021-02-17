@@ -22,9 +22,41 @@ import dataset
 import dataset_prepare
 import evaluate_clustering
 
+def add_spheres_as_2_balls_in_dataset(dataset_path = '', mode = 'train'):
+  # mode can be train or test and will effect the range of the loop
 
-def generate_sphere():
-  sphere = trimesh.primitives.Sphere()
+  if dataset_path == '':
+    return
+  meshs = []
+  two_balls_idx = 18
+  classes_indices_to_use = [two_balls_idx]
+  two_balls_filenames = None
+
+  i = 0 if mode == 'train' else 16
+  max_num = 16 if mode == 'train' else 20
+
+  while i < max_num:
+    new_mesh = generate_sphere(radius=1.0+0.5*i, label=two_balls_idx)
+    meshs.append(new_mesh)
+    i+=1
+
+  filenames = dataset.get_file_names(dataset_path, [0, np.inf])
+
+  if classes_indices_to_use is not None:
+    two_balls_filenames = dataset.filter_fn_by_class(filenames, classes_indices_to_use)
+
+  if two_balls_filenames is not None:
+    for idx,file in enumerate(two_balls_filenames):
+      two_balls_mesh = np.load(file, encoding='latin1', allow_pickle=True)
+      mesh_data = {k: v for k, v in two_balls_mesh.items()}
+      mesh_data['vertices'] = meshs[idx]['vertices']
+      mesh_data['faces'] = meshs[idx]['faces']
+      np.savez(file, **mesh_data)
+
+  return
+
+def generate_sphere(radius = 1.0, label = 0):
+  sphere = trimesh.primitives.Sphere(radius = radius)
   mesh = open3d.geometry.TriangleMesh()
   mesh.vertices = open3d.utility.Vector3dVector(sphere.vertices.copy())
   mesh.triangles = open3d.utility.Vector3iVector(sphere.faces.copy())
@@ -32,7 +64,7 @@ def generate_sphere():
   vertices = np.array(mesh.vertices)
   dataset.norm_model.sub_mean_for_data_augmentation = False
   dataset.norm_model(vertices)
-  mesh = {'vertices': vertices, 'faces': np.array(mesh.triangles), 'label': 0}
+  mesh = {'vertices': vertices, 'faces': np.array(mesh.triangles), 'label': label}
   dataset_prepare.prepare_edges_and_kdtree(mesh)
 
   return mesh
@@ -530,4 +562,6 @@ def main():
   return 0
 
 if __name__ == '__main__':
+  #for mode in ['train', 'test']:
+  #  add_spheres_as_2_balls_in_dataset(dataset_path='datasets_processed/shrec11/16-04_a_changed/' + mode + '/*', mode=mode)
   main()

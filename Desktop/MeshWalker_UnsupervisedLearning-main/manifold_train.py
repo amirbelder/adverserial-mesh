@@ -397,6 +397,9 @@ def run_one_job(job, job_part, network_task):
         first_label = min(config['source_label'], config['target_label'])
         sec_label = max(config['source_label'], config['target_label'])
         params.classes_indices_to_use = [first_label, sec_label]
+    elif config['train_several_classes'] == True:
+      params.classes_indices_to_use = config['classes_to_train']
+
 
   train_val(params)
 

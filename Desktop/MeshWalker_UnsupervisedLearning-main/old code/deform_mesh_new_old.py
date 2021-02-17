@@ -139,7 +139,9 @@ def get_mesh_path_500(config):
   if config['source_label'] == 4:
     return 'datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz' #dog2
   if config['source_label'] == 7:
-    return 'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz' #dog1
+    #return 'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz' #dog1 #orig
+    #return 'datasets_processed/shrec11/16-04_a/train/T476_not_changed_500.npz'
+    return 'datasets_processed/shrec11/16-04_a/train/T331_not_changed_500.npz'
   if config['source_label'] == 9:
     #return 'datasets_processed/shrec11/16-04_a/train/T520_not_changed_500.npz' #bird2
     return 'datasets_processed/shrec11/16-04_a/train/T358_not_changed_500.npz' # bird2 upsidedown
@@ -260,12 +262,15 @@ def change_one_tarj(config):
       pred = dnn_model(ftrs, classify=True, training=False)
 
       # Produce the attack
+
+      # ftrs VS target
       sparse_attack = 0 if config['sparse_alpha'] == 0 else w * tf.keras.losses.sparse_categorical_crossentropy(config['target_label'], pred)
       kl_div_attack = 0 if config['kl_div_alpha'] == 0 else w * kl_divergence_loss(config['target_label'], pred)
       mse_attack = 0 if config['mse_alpha'] == 0 else w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
       # No chamfer dist for now, as it's supposed to be between 2 sets of points, and not preds
 
       attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
+
 
     gradients = tape.gradient(attack, ftrs)
     target_pred_brfore_attack = (pred[0].numpy())[config['target_label']]
@@ -339,9 +344,9 @@ def mesh_reconstruction(config):
   #utils.visualize_model(mesh_data['vertices'], mesh_data['faces'])
 
   #target_feature_vector = calc_ftr_vector(params, dnn_model, npz_fn)
-  target_feature_vector = tf.one_hot(indices=config['target_label'], depth=params.n_classes)
-  #return tf.one_hot(indices=labels, depth=params.n_classes)
 
+  target_feature_vector = tf.one_hot(indices=config['target_label'], depth=params.n_classes)
+  source_feature_vector = tf.one_hot(indices=config['source_label'], depth=params.n_classes)
   skip = int(params.seq_len / 2)
 
   loss = []
@@ -375,24 +380,121 @@ def mesh_reconstruction(config):
 
       # Produce the attack
 
+      # ftrs VS target
+      #sparse_attack = 0 if config['sparse_alpha'] == 0 else w * tf.keras.losses.sparse_categorical_crossentropy(config['target_label'], pred)
+      #kl_div_attack = 0 if config['kl_div_alpha'] == 0 else w * kl_divergence_loss(config['target_label'], pred)
+      #mse_attack = 0 if config['mse_alpha'] == 0 else w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
+      # No chamfer dist for now, as it's supposed to be between 2 sets of points, and not preds
+
+      #target_attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
+
+      # ftrs VS source
+      sparse_attack = 0 if config['sparse_alpha'] == 0 else w * tf.keras.losses.sparse_categorical_crossentropy(config['source_label'], pred)
+      kl_div_attack = 0 if config['kl_div_alpha'] == 0 else w * kl_divergence_loss(config['source_label'], pred)
+      mse_attack = 0 if config['mse_alpha'] == 0 else w * tf.keras.losses.mean_squared_error(source_feature_vector, pred[0])
+      # No chamfer dist for now, as it's supposed to be between 2 sets of points, and not preds
+
+      attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
+
+      #attack = -0.5 * source_attack + 0.5 * target_attack
+      #attack = source_attack
+
+      target_pred_brfore_attack = (pred[0].numpy())[config['target_label']]
+      source_pred_brfore_attack = (pred[0].numpy())[config['source_label']]
+
+      # If the right label is the target label and we got at least 95% pred,
+      # we won't change anything and will skip the iteration.
+      # That's because the part we checked already looks like we want it to.
+      if (pred[0].numpy())[config['target_label']] > config['pred_close_enough_to_target']:
+        skipped_iters += 1
+        if skipped_iters < 10:
+          print("skipped iter: ", num_iter)
+          continue
+        else:
+          skipped_iters = 0
+
+      gradients = tape.gradient(attack, ftrs)
+      ftrs_after_attack_update = ftrs - gradients
+      #ftrs_after_attack_update_neg = ftrs - gradients
+      new_pred = dnn_model(ftrs_after_attack_update, classify=True, training=False)
+      #new_pred_neg = dnn_model(ftrs_after_attack_update_neg, classify=True, training=False)
+
+      # Check to see that we didn't update too much
+      # We don't want the change to be too big, as it may result in intersections.
+      # And so, we check to see if the change caused us to get closer to the target by more than 0.01.
+      # If so, we will divide the change so it won't change more than 0.01
+      target_pred_after_attack = (new_pred[0].numpy())[config['target_label']]
+      source_pred_after_attack = (new_pred[0].numpy())[config['source_label']]
+
+      source_pred_diff = source_pred_brfore_attack - source_pred_after_attack
+      target_pred_diff = target_pred_brfore_attack - target_pred_after_attack
+
+      #if source_pred_diff < 0 or target_pred_diff >0:
+      #  print("wasn't the right direction to go")
+      #  continue
+
+      source_pred_abs_diff = abs(source_pred_brfore_attack - source_pred_after_attack)
+      target_pred_abs_diff = abs(target_pred_brfore_attack - target_pred_after_attack)
+
+      if source_pred_abs_diff > config['max_label_diff'] or target_pred_abs_diff > config['max_label_diff']:
+          ratio = config['max_label_diff'] / max(source_pred_abs_diff, target_pred_abs_diff)
+          gradients = gradients * ratio
+          # We update the gradients accordingly
+          #gradients = tape.gradient(attack, ftrs)
+
+      # Changing the weight of the attacks if it cause too much/little effect.
+
+      if source_pred_abs_diff < config['no_change_pred_threshold'] or target_pred_abs_diff < \
+              config['no_change_pred_threshold']:
+          num_iter_no_change += 1
+
+      if source_pred_abs_diff > config['no_change_pred_threshold'] or target_pred_abs_diff > config['no_change_pred_threshold']:
+        if w > 10e-3:
+          w /= 2
+
+      # Weight updates according to num of unchanged iterations
+      if num_iter_no_change > config['iterations_with_no_changes']:
+        if w * 2 < config['weight_threshold']:
+          w *= 2
+        num_iter_no_change = 0
+
+      if num_iter % config['iter_2_change_weight'] == 0:
+        if w * 10 < config['weight_threshold']:
+          w *= 10
+
+      print("iter:", num_iter, " attack:", attack.numpy(), " w:", w, " target prec:",
+            (pred[0].numpy())[config['target_label']], " source prec:", (pred[0].numpy())[config['source_label']],
+            " max label:", np.argmax(pred), " gpu_temp: ", gpu_tmpr)
+
+      loss.append(attack.numpy())
+
+      # Updating the mesh itself
+      mesh_data['vertices'][v_indices[skip:]] += gradients[0][skip:].numpy()
+
+      curr_save_image_iter = num_iter - (num_iter % config['image_save_iter'])
+      if curr_save_image_iter / config['image_save_iter'] >= last_dev_res + 1 or num_iter == 0:
+        cpos = dump_mesh(mesh_data, result_path, cpos, num_iter)
+        last_dev_res = num_iter / config['image_save_iter']
+        deform_add_fields_and_dump_model(mesh_data=mesh_data, fileds_needed=fields_needed, out_fn=result_path + '/last_model.npz')#"+ str(num_iter))
+
+      curr_plot_iter = num_iter - (num_iter % config['plot_iter'])
+      if curr_plot_iter / config['plot_iter'] >= last_plt_res + 1 or num_iter == 0:
+        plot_preditions(params, dnn_model, config, mesh_data, result_path, num_iter, x_axis, source_pred_list, target_pred_list)
+        last_plt_res = num_iter / config['plot_iter']
+
+
+      if config['show_model_every'] > 0 and num_iter % config['show_model_every'] == 0 and num_iter > 0:
+          plt.plot(loss)
+          plt.show()
+          utils.visualize_model(mesh_data['vertices'], mesh_data['faces'])
+
       sparse_attack = 0 if config['sparse_alpha'] == 0 else w * tf.keras.losses.sparse_categorical_crossentropy(config['source_label'], pred)
       kl_div_attack = 0 if config['kl_div_alpha'] == 0 else w * kl_divergence_loss(config['source_label'], pred)
       mse_attack = 0 if config['mse_alpha'] == 0 else w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
       # No chamfer dist for now, as it's supposed to be between 2 sets of points, and not preds
 
-      away_from_source_attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
-
-      sparse_attack = 0 if config['sparse_alpha'] == 0 else w * tf.keras.losses.sparse_categorical_crossentropy(config['target_label'], pred)
-      kl_div_attack = 0 if config['kl_div_alpha'] == 0 else w * kl_divergence_loss(config['target_label'], pred)
-      mse_attack = 0 if config['mse_alpha'] == 0 else w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
-      # No chamfer dist for now, as it's supposed to be between 2 sets of points, and not preds
-
-      forward_target_attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
-
-      if num_iter % 2 == 0:
-        attack = away_from_source_attack * -1
-      else:
-        attack = forward_target_attack
+      attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
+      attack*=-1
 
     pred = tf.reduce_sum(pred, 0)
     pred /= 8
@@ -472,7 +574,6 @@ def mesh_reconstruction(config):
 
     curr_save_image_iter = num_iter - (num_iter % config['image_save_iter'])
     if curr_save_image_iter / config['image_save_iter'] >= last_dev_res + 1 or num_iter == 0:
-      print(result_path)
       cpos = dump_mesh(mesh_data, result_path, cpos, num_iter)
       last_dev_res = num_iter / config['image_save_iter']
       deform_add_fields_and_dump_model(mesh_data=mesh_data, fileds_needed=fields_needed, out_fn=result_path + '/last_model.npz')#"+ str(num_iter))
@@ -509,7 +610,7 @@ def check_model_accuracy():
   return
 
 def loop_over_mesh_recon():
-  networks = os.listdir('../../mesh_walker/runs_aug_360_must/0000_important_runs')
+  networks = os.listdir('../../../mesh_walker/runs_aug_360_must/0000_important_runs')
   return
 
 def main():

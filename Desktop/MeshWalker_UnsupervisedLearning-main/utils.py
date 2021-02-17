@@ -50,21 +50,26 @@ def get_config(config):
     return yaml.safe_load(stream)
 
 
-def config_gpu(use_gpu=True, gpu_num_to_use = 0):
+def config_gpu(use_gpu=True, gpu_num_to_use = -1):
   print('tf.__version__', tf.__version__)
   np.set_printoptions(suppress=True)
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
   try:
     if use_gpu:
       gpus = tf.config.experimental.list_physical_devices('GPU')
-      #if gpu_num_to_use <= len(gpus) and gpu_num_to_use >= 0:
+
+
+
+      if gpu_num_to_use <= len(gpus) and gpu_num_to_use >= 0:
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_num_to_use)
         #gpus = gpus[gpu_num_to_use]
        # os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_num_to_use)
       #else:
       #  gpus = [gpus[0]]
       for idx, gpu in enumerate(gpus):
-      #  if idx == gpu_num_to_use or gpu_num_to_use < 0:
-        tf.config.experimental.set_memory_growth(gpu, True)
+        if idx == gpu_num_to_use or gpu_num_to_use < 0:
+          tf.config.experimental.set_memory_growth(gpu, True)
     else:
       os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
   except:
@@ -408,7 +413,7 @@ def print_cpos(cpos):
 next_iter_to_keep = 0 # Should be set by -train_val- function, each time job starts
 def save_model_if_needed(iterations, dnn_model, params):
   global next_iter_to_keep
-  iter_th = 5000
+  iter_th = 1000
   keep = iterations.numpy() >= next_iter_to_keep
   dnn_model.save_weights(params.logdir, iterations.numpy(), keep=keep)
   if keep:

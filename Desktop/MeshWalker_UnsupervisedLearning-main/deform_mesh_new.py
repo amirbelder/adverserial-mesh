@@ -322,6 +322,31 @@ def set_attack(config, away_from_source_attack, forward_target_attack, num_iter)
   else:
     return 0
 
+
+def chose_target(config, dnn_model, params):
+  """
+  We will set the target to be the class with the second best prediction
+  """
+  mesh_path = get_mesh_path_500(config=config)
+  orig_mesh_data = np.load(mesh_path, encoding='latin1', allow_pickle=True)
+  mesh_data = {k: v for k, v in orig_mesh_data.items()}
+  features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
+  ftrs = tf.cast(features[:, :, :3], tf.float32)
+  pred = dnn_model(ftrs, classify=True, training=False)
+  pred = tf.reduce_sum(pred, 0)
+  pred /= params.n_walks_per_model
+  sorted_preds = np.argsort(pred)
+  # Setting the class with the second best prediction as the target
+  if config['source_label'] == sorted_preds[-1]:
+    config['target_label'] = sorted_preds[-2]
+  elif config['source_label'] == sorted_preds[-2]:
+    config['target_label'] = sorted_preds[-1]
+  else:
+    print("Bas choise of model! The source label is not one of the 2 largest predictions. Exiting")
+    exit(-1)
+  return config
+
+
 def mesh_reconstruction(config):
   with open(config['trained_model'] + '/params.txt') as fp:
     params = EasyDict(json.load(fp))
@@ -341,8 +366,11 @@ def mesh_reconstruction(config):
   dnn_model = rnn_model.RnnManifoldWalkNet(params, params.n_classes, 3, model_fn,
                                    model_must_be_load=True, dump_model_visualization=False)
 
-  prec_arr = [x * 0.1 for x in range(11)]
-  was_made = [False for i in range(10)]
+  if config['chose_target_label'] == True:
+    config = chose_target(config, dnn_model, params)
+
+  print("source label: ", config['source_label'], " target label: ", config['target_label'], " output dir: ", get_res_path(config))
+
   result_path=get_res_path(config)
   if os.path.isdir(result_path):
       shutil.rmtree(result_path)
@@ -419,7 +447,7 @@ def mesh_reconstruction(config):
 
 
     pred = tf.reduce_sum(pred, 0)
-    pred /= 8
+    pred /= params.n_walks_per_model
     target_pred_brfore_attack = (pred.numpy())[config['target_label']]
     source_pred_brfore_attack = (pred.numpy())[config['source_label']]
 
@@ -436,11 +464,11 @@ def mesh_reconstruction(config):
 
     gradients = tape.gradient(attack, ftrs)
     ftrs_after_attack_update = ftrs + gradients
-    ftrs_after_attack_update_neg = ftrs - gradients
+
     new_pred = dnn_model(ftrs_after_attack_update, classify=True, training=False)
     new_pred = tf.reduce_sum(new_pred, 0)
-    new_pred/=8
-    new_pred_neg = dnn_model(ftrs_after_attack_update_neg, classify=True, training=False)
+    new_pred /= params.n_walks_per_model
+
 
     # Check to see that we didn't update too much
     # We don't want the change to be too big, as it may result in intersections.
@@ -559,7 +587,6 @@ def main():
   config = utils.get_config(opts.config)
 
   #check_model_accuracy()
-  print("source label: ", config['source_label'], " target label: ", config['target_label'], " output dir: ", get_res_path(config))
   mesh_reconstruction(config)
   #change_one_tarj(config)
 

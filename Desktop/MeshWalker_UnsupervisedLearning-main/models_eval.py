@@ -8,6 +8,9 @@ import numpy as np
 import tensorflow as tf
 import trimesh, open3d
 import pyvista as pv
+import csv
+import pandas as pd
+
 import scipy
 import pylab as plt
 from sklearn.manifold import TSNE
@@ -154,6 +157,93 @@ def get_mesh_path_500(config):
   return '../../mesh_walker/man_to_man/last_model.npz'
   #return None
 
+def eval_npz_preds(config):
+  walk_len = 2000
+  #dog2
+  npz_paths_dog2 = ['datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T93_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T207_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T507_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T8_not_changed_500.npz']
+  #dog1
+  npz_paths_dog1 = ['datasets_processed/shrec11/16-04_a/train/T476_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T144_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T331_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T125_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T393_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T436_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T197_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T367_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T409_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T373_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T193_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T309_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T99_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz', 'datasets_processed/shrec11/16-04_a/train/T354_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T203_not_changed_500.npz']
+  #horse
+  npz_paths_horse = ['datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T348_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T364_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T184_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T301_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T304_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T454_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T343_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T142_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T303_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T117_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T485_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T234_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T579_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T402_not_changed_500.npz',
+                     'datasets_processed/shrec11/16-04_a/train/T529_not_changed_500.npz']
+  #camel
+  npz_paths_camel = ['datasets_processed/shrec11/16-04_a/train/T187_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T219_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T336_not_changed_500.npz'	,'datasets_processed/shrec11/16-04_a/train/T439_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T481_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T300_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T464_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T497_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T536_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T52_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T431_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T92_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T35_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T538_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T453_not_changed_500.npz',	'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz']
+
+  res_file = open("dog_1_dog_2_horse_camel_eval_npz.txt", "a")
+  paths = []
+  orig_labels = []
+  dog1_preds = []
+  dog2_preds = []
+  horse_preds = []
+  camel_preds = []
+
+  for npz_paths in [npz_paths_dog2, npz_paths_horse, npz_paths_camel, npz_paths_dog1]:
+      with open(config['trained_model']) as fp:
+        params = EasyDict(json.load(fp))
+      model_fn = tf.train.latest_checkpoint(config['trained_model'])
+      params.batch_size = 1
+      params.seq_len = walk_len
+      params.n_walks_per_model = 16
+      params.set_seq_len_by_n_faces = False
+      params.data_augmentaion_vertices_functions = []
+      params.label_per_step = False
+      params.n_target_vrt_to_norm_walk = 0
+      params.net_input += ['vertex_indices']
+      dataset.setup_features_params(params, params)
+      dataset.mesh_data_to_walk_features.SET_SEED_WALK = False
+
+      dnn_model = rnn_model.RnnManifoldWalkNet(params, params.n_classes, 3, model_fn,
+                                       model_must_be_load=True, dump_model_visualization=False)
+
+
+      shrec11_labels = [
+      'armadillo',  'man',      'centaur',    'dinosaur',   'dog2',
+      'ants',       'rabbit',   'dog1',       'snake',      'bird2',
+      'shark',      'dino_ske', 'laptop',     'santa',      'flamingo',
+      'horse',      'hand',     'lamp',       'two_balls',  'gorilla',
+      'alien',      'octopus',  'cat',        'woman',      'spiders',
+      'camel',      'pliers',   'myScissor',  'glasses',    'bird1'
+      ]
+
+
+      for path in npz_paths:
+        orig_mesh_data = np.load(path, encoding='latin1', allow_pickle=True)
+        mesh_data = {k: v for k, v in orig_mesh_data.items()}
+
+        features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
+        ftrs = tf.cast(features[:, :, :3], tf.float32)
+        preds = dnn_model(ftrs, classify=True, training=False)
+        sum_pred = tf.reduce_sum(preds, 0)
+        dog1_pred = (sum_pred.numpy())[7] / 16
+        dog2_pred = (sum_pred.numpy())[4] / 16
+        horse_pred = (sum_pred.numpy())[15] / 16
+        camel_pred = (sum_pred.numpy())[25] / 16
+        paths.append(path)
+        orig_labels.append(mesh_data['label'])
+        dog1_preds.append(dog1_pred)
+        dog2_preds.append(dog2_pred)
+        horse_preds.append(horse_pred)
+        camel_preds.append(camel_pred)
+
+  info_dict = {'Path': paths, 'Orig Labels': orig_labels, 'dog1_pred': dog1_preds, 'dog2_preds': dog2_preds, 'horse_preds': horse_preds, 'camel_preds': camel_preds}
+  data = pd.DataFrame(info_dict)
+  data.to_csv(path_or_buf="dog_1_dog_2_horse_camel_eval_npz.csv")
+
+
 def mesh_reconstruction(config):
 
   nets = os.listdir('../../mesh_walker/runs_aug_360_must/0000_important_runs')
@@ -231,7 +321,8 @@ def main():
 
   #check_model_accuracy()
   print("source label: ", config['source_label'], " target label: ", config['target_label'], " output dir: ", get_res_path(config))
-  mesh_reconstruction(config)
+  #mesh_reconstruction(config)
+  eval_npz_preds(config)
 
   return 0
 

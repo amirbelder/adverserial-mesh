@@ -249,7 +249,7 @@ def shrec11_params(split_part, network_task, config = None):
   params.full_accuracy_test = {'dataset_folder': params.datasets2use['test'][0],
                                'labels': dataset_prepare.shrec11_labels}
 
-  params.iters_to_train = 30e3
+  params.iters_to_train = 32e3
 
 
   return params

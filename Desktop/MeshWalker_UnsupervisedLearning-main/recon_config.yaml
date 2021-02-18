@@ -7,8 +7,10 @@ result_path: '../../mesh_walker/horse_to_dog2/'
 #'../../mesh_walker/dog2_to_camel/'
 #'../../mesh_walker/dog2_to_horse/'
 
-use_prev_model: True
-trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_then_kl_div_dog1_horse'
+use_prev_model: False
+trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/sparse_only_first_30_then_4'
+#'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
+#'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_then_kl_div_dog1_horse'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_and_kl_30_then_2_only_manifold_dog1_dog2'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_lk_and_sparse_loss_30_labels'
@@ -19,24 +21,25 @@ trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold
 #'../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/'
 #'../../mesh_walker/runs_aug_360_must/0096-12.01.2021..18.04_horse_balls_only_shrec11_16-04_a/'
 
-description: "manifold sparse only, only dog1 and god2 after all 30"
-dataset_path: 'datasets_processed/shrec11/16-04_a/test/*.npz'
+description: "sprase training over all 30, two balls switched with spheres"
 
 job: 'shrec11'
-job_part: '16-04_a'
+job_part: '16-04_a_changed'
 # choose network task from: 'features_extraction', 'unsupervised_classification', 'semantic_segmentation', 'classification', 'manifold_classification'.
 network_task: 'manifold_classification'
 
 # 2 labels training params
 # 15 - horse, 18 - balls, 25 - camel, 7 - dog1, 4 - dog2, 23 - woman, 1- man, 9- bird2, 29- bird1
-target_label: 7
-source_label: 15
+target_label: 4
+source_label: 7
 
-trained_only_2_classes: True
+trained_only_2_classes: False # True
+train_several_classes: False # True
+classes_to_train: [4,7,15,18,25]
 
 # Manifold params
 shift_size: 1
-non_zero_ratio: 3
+non_zero_ratio: 2
 alpha: 0.5
 #'sparse_only' #'manifold_only' #'both'
 sparse_or_manifold: 'sparse_only'
@@ -49,11 +52,11 @@ max_label_diff: 0.0001
 iterations_with_no_changes: 25
 no_change_pred_threshold: 0.0003
 pred_close_enough_to_target: 0.9
-max_iter: 15_000
+max_iter: 150_000
 iter_2_change_weight: 1_000
-show_model_every: 15_000
+show_model_every: 150_000
 
-walk_len: 2000
+walk_len: 200
 use_sphere_or_model: 'model' #'sphere' #'model'
 
 

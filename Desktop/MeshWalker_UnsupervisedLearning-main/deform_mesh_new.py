@@ -1,3 +1,15 @@
+import argparse
+import utils
+#get hyper params from yaml
+parser = argparse.ArgumentParser()
+parser.add_argument('--config', type=str, default='recon_config.yaml', help='Path to the config file.')
+opts = parser.parse_args()
+config = utils.get_config(opts.config)
+
+if config['gpu_to_use'] >= 0:
+  utils.set_single_gpu(config['gpu_to_use'])
+
+
 import os, shutil, time, copy, glob
 from easydict import EasyDict
 import json
@@ -167,7 +179,7 @@ def change_one_tarj(config):
   dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, 3, model_fn,
                                    model_must_be_load=True, dump_model_visualization=False)
 
-  result_path=get_res_path(config)
+  result_path, _ = get_res_path(config)
   if os.path.isdir(result_path):
       shutil.rmtree(result_path)
 
@@ -243,12 +255,12 @@ def get_res_path(config):
   ]
 
   #fn = npz_fn.split('/')[-1].split('.')[-2]
-  folder_name = config['trained_model'].split('/')[-1]
-  if len(folder_name) > 0:
-    res_path = '../../mesh_walker/' +folder_name +'/' + shrec11_labels[config['source_label']] + '_to_' + shrec11_labels[config['target_label']]
+  net_name = config['trained_model'].split('/')[-1]
+  if len(net_name) > 0:
+    res_path = '../../mesh_walker/' +net_name +'/' + shrec11_labels[config['source_label']] + '_to_' + shrec11_labels[config['target_label']]
   else:
     res_path = '../../mesh_walker/'  + shrec11_labels[config['source_label']] + '_to_' + shrec11_labels[config['target_label']]
-  return res_path
+  return res_path, net_name
 
 def get_mesh_path_500(config):
   if config['source_label'] == 1:
@@ -282,8 +294,8 @@ def plot_preditions(params, dnn_model, config, mesh_data, result_path, num_iter,
   ftrs = tf.cast(features[:, :, :3], tf.float32)
   eight_pred = dnn_model(ftrs, classify=True, training=False)
   sum_pred = tf.reduce_sum(eight_pred, 0)
-  print("target_label over " + str(params.n_walks_per_model) + " runs is: ", (sum_pred.numpy())[config['target_label']] / params.n_walks_per_model)
-  print("source_label over " + str(params.n_walks_per_model) + " runs is: ", (sum_pred.numpy())[config['source_label']] / params.n_walks_per_model)
+  print("target_label number ", config['target_label'],  " over " + str(params.n_walks_per_model) + " runs is: ", (sum_pred.numpy())[config['target_label']] / params.n_walks_per_model)
+  print("source_label number ", config['source_label'],  " over " + str(params.n_walks_per_model) + " runs is: ", (sum_pred.numpy())[config['source_label']] / params.n_walks_per_model)
   source_pred_list.append((sum_pred.numpy())[config['source_label']] / params.n_walks_per_model)
   target_pred_list.append((sum_pred.numpy())[config['target_label']] / params.n_walks_per_model)
   for i in range(len(predictions)):
@@ -420,7 +432,7 @@ def mesh_reconstruction(config):
   last_dev_res = 0
   last_plt_res = 0
   skipped_iters = 0
-  res_path = get_res_path(config)
+  res_path, net_name = get_res_path(config)
   fields_needed = ['vertices', 'faces', 'edges', 'kdtree_query', 'label', 'labels', 'dataset_name', 'labels_fuzzy']
   source_pred_list = []
   target_pred_list = []
@@ -550,7 +562,7 @@ def mesh_reconstruction(config):
         label = sorted_preds[-i -1]
         preds_to_print_str += ' pred label ' + str(label) + ': ' + str((pred.numpy())[label])
 
-      print('\n' +'attack direction: ' + config['attack_direction'] + '\n' + preds_to_print_str + '\n')
+      print('\n' + str(net_name) + ' attack direction: ' + config['attack_direction'] + '\n' + preds_to_print_str +'\n')
 
     curr_save_image_iter = num_iter - (num_iter % config['image_save_iter'])
     if curr_save_image_iter / config['image_save_iter'] >= last_dev_res + 1 or num_iter == 0:
@@ -596,14 +608,7 @@ def loop_over_mesh_recon():
 
 def main():
   np.random.seed(0)
-  utils.config_gpu(1, -1)
-
-  #get hyper params from yaml
-  parser = argparse.ArgumentParser()
-  parser.add_argument('--config', type=str, default='recon_config.yaml', help='Path to the config file.')
-  opts = parser.parse_args()
-  config = utils.get_config(opts.config)
-
+  utils.config_gpu(1, config['gpu_to_use'])
   #check_model_accuracy()
   mesh_reconstruction(config)
   #change_one_tarj(config)

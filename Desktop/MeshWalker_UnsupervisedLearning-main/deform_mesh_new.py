@@ -254,25 +254,29 @@ def get_mesh_path_500(config):
   if config['source_label'] == 1:
     return 'datasets_processed/shrec11/16-04_a/train/T437_not_changed_500.npz' #man
   if config['source_label'] == 4:
-    return 'datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz' #dog2
+    #return 'datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz' #dog2
+    return 'datasets_processed/shrec11/16-04_a/train/T93_not_changed_500.npz' # A green dog2
   if config['source_label'] == 7:
-    return 'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz' #dog1
+    #return 'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz' #dog1
+    return 'datasets_processed/shrec11/16-04_a/train/T197_not_changed_500.npz' # A green dog1
   if config['source_label'] == 9:
     #return 'datasets_processed/shrec11/16-04_a/train/T520_not_changed_500.npz' #bird2
     return 'datasets_processed/shrec11/16-04_a/train/T358_not_changed_500.npz' # bird2 upsidedown
   if config['source_label'] == 15:
-    return 'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse
+    #return 'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse
+    return 'datasets_processed/shrec11/16-04_a/train/T234_not_changed_500.npz' # A green horse
   if config['source_label'] == 23:
     return 'datasets_processed/shrec11/16-04_a/train/T36_not_changed_500.npz' # woman
   if config['source_label'] == 25:
-    return 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #camel
+    #return 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #camel
+    return 'datasets_processed/shrec11/16-04_a/train/T497_not_changed_500.npz' # A green camel
   if config['source_label'] == 29:
     return 'datasets_processed/shrec11/16-04_a/train/T60_not_changed_500.npz' #bird1
   return '../../mesh_walker/man_to_man/last_model.npz'
   #return None
 
 
-def plot_preditions(params, dnn_model, config, mesh_data, result_path, num_iter, x_axis, source_pred_list, target_pred_list):
+def plot_preditions(params, dnn_model, config, mesh_data, result_path, num_iter, x_axis, source_pred_list, target_pred_list, predictions):
   params.n_walks_per_model = 16
   features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
   ftrs = tf.cast(features[:, :, :3], tf.float32)
@@ -282,12 +286,21 @@ def plot_preditions(params, dnn_model, config, mesh_data, result_path, num_iter,
   print("source_label over " + str(params.n_walks_per_model) + " runs is: ", (sum_pred.numpy())[config['source_label']] / params.n_walks_per_model)
   source_pred_list.append((sum_pred.numpy())[config['source_label']] / params.n_walks_per_model)
   target_pred_list.append((sum_pred.numpy())[config['target_label']] / params.n_walks_per_model)
+  for i in range(len(predictions)):
+    predictions[i].append((sum_pred.numpy())[config['classes_to_train'][i]] / params.n_walks_per_model)
   params.n_walks_per_model = 8
 
   if not os.path.isdir(result_path + '/plots/'):
     os.makedirs(result_path + '/plots/')
   # plot the predictions
   x_axis.append(num_iter)
+
+  for i in range(len(predictions)):
+    plt.plot(x_axis, predictions[i])
+    name_of_graph = str(config['classes_to_train'][i]) + ' prediction'
+    plt.title(name_of_graph)
+    plt.savefig(result_path + '/plots/' + name_of_graph +'.png')
+    plt.close()
 
   plt.plot(x_axis, source_pred_list)
   plt.title(str(config['source_label']) + " to " + str(config['target_label']) + ": source pred")
@@ -323,13 +336,14 @@ def set_attack(config, away_from_source_attack, forward_target_attack, num_iter)
     return 0
 
 
-def chose_target(config, dnn_model, params):
+def chose_target(config, dnn_model, params, mesh_data = None):
   """
   We will set the target to be the class with the second best prediction
   """
-  mesh_path = get_mesh_path_500(config=config)
-  orig_mesh_data = np.load(mesh_path, encoding='latin1', allow_pickle=True)
-  mesh_data = {k: v for k, v in orig_mesh_data.items()}
+  if mesh_data is None:
+    mesh_path = get_mesh_path_500(config=config)
+    orig_mesh_data = np.load(mesh_path, encoding='latin1', allow_pickle=True)
+    mesh_data = {k: v for k, v in orig_mesh_data.items()}
   features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
   ftrs = tf.cast(features[:, :, :3], tf.float32)
   pred = dnn_model(ftrs, classify=True, training=False)
@@ -341,9 +355,9 @@ def chose_target(config, dnn_model, params):
     config['target_label'] = sorted_preds[-2]
   elif config['source_label'] == sorted_preds[-2]:
     config['target_label'] = sorted_preds[-1]
-  else:
-    print("Bas choise of model! The source label is not one of the 2 largest predictions. Exiting")
-    exit(-1)
+  #else:
+  #  print("Bas choise of model! The source label is not one of the 2 largest predictions. Exiting")
+  #  exit(-1)
   return config
 
 
@@ -410,10 +424,11 @@ def mesh_reconstruction(config):
   fields_needed = ['vertices', 'faces', 'edges', 'kdtree_query', 'label', 'labels', 'dataset_name', 'labels_fuzzy']
   source_pred_list = []
   target_pred_list = []
-  x_axis = []
-  # Dedining the attacks
-  kl_divergence_loss = tf.keras.losses.KLDivergence()
+  predictions = []
+  for i in range(len(config['classes_to_train'])):
+    predictions.append([])
 
+  x_axis = []
   # Defining attacks
   kl_divergence_loss = tf.keras.losses.KLDivergence()
 
@@ -441,8 +456,11 @@ def mesh_reconstruction(config):
       mse_attack = 0 if config['mse_alpha'] == 0 else w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
       # No chamfer dist for now, as it's supposed to be between 2 sets of points, and not preds
 
-      forward_target_attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
-
+      #forward_target_attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
+      forward_target_attack = w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
+      if config['attack_direction'] == 'after':
+        if num_iter == config['thrs_iters_for_forward']:
+          chose_target(config=config, dnn_model=dnn_model, params=params, mesh_data=mesh_data)
       attack = set_attack(config, away_from_source_attack, forward_target_attack, num_iter)
 
 
@@ -543,7 +561,7 @@ def mesh_reconstruction(config):
 
     curr_plot_iter = num_iter - (num_iter % config['plot_iter'])
     if curr_plot_iter / config['plot_iter'] >= last_plt_res + 1 or num_iter == 0:
-      plot_preditions(params, dnn_model, config, mesh_data, result_path, num_iter, x_axis, source_pred_list, target_pred_list)
+      plot_preditions(params, dnn_model, config, mesh_data, result_path, num_iter, x_axis, source_pred_list, target_pred_list, predictions)
       last_plt_res = num_iter / config['plot_iter']
 
 

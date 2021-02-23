@@ -8,7 +8,8 @@ result_path: '../../mesh_walker/horse_to_dog2/'
 #'../../mesh_walker/dog2_to_horse/'
 
 use_prev_model: True
-trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/sparse_30_then_kl_and_sparse_4'
+trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
+#'../../mesh_walker/runs_aug_360_must/0000_important_runs/sparse_30_then_kl_and_sparse_4'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_then_kl_div_dog1_horse'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_and_kl_30_then_2_only_manifold_dog1_dog2'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
@@ -31,7 +32,7 @@ network_task: 'manifold_classification'
 # 2 labels training params
 # 15 - horse, 18 - balls, 25 - camel, 7 - dog1, 4 - dog2, 23 - woman, 1- man, 9- bird2, 29- bird1
 target_label: 25
-source_label: 4
+source_label: 7
 chose_target_label: True
 
 trained_only_2_classes: False
@@ -77,7 +78,7 @@ mesh_path: 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #
 
 #Attack params
 #'forward' - too target, 'away' - away from source, 'both' - one forward iter and one away iter, 'after' - firstly away and atfer num_iters forward
-attack_direction: 'after'
+attack_direction: 'both'
 thrs_iters_for_forward: 10_000
 sparse_alpha: 0
 kl_div_alpha: 1

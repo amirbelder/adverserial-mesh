@@ -7,9 +7,8 @@ result_path: '../../mesh_walker/horse_to_dog2/'
 #'../../mesh_walker/dog2_to_camel/'
 #'../../mesh_walker/dog2_to_horse/'
 
-use_prev_model: False
-trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/sparse_only_first_30_then_4'
-#'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
+use_prev_model: True
+trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/sparse_30_then_kl_and_sparse_4'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_then_kl_div_dog1_horse'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_and_kl_30_then_2_only_manifold_dog1_dog2'
 #'../../mesh_walker/runs_aug_360_must/0000_important_runs/manifold_sparse_loss_only_30_labels'
@@ -21,29 +20,30 @@ trained_model: '../../mesh_walker/runs_aug_360_must/0000_important_runs/sparse_o
 #'../../mesh_walker/runs_aug_360_must/0078-06.01.2021..15.42__camel_horse_xyz__shrec11_16-04_a/'
 #'../../mesh_walker/runs_aug_360_must/0096-12.01.2021..18.04_horse_balls_only_shrec11_16-04_a/'
 
-description: "sprase training over all 30, two balls switched with spheres"
+description: "manifold training of dog1,dog2, horse and camel, after all 30"
+dataset_path: 'datasets_processed/shrec11/16-04_a/test/*.npz'
 
 job: 'shrec11'
-job_part: '16-04_a_changed'
+job_part: '16-04_a'
 # choose network task from: 'features_extraction', 'unsupervised_classification', 'semantic_segmentation', 'classification', 'manifold_classification'.
 network_task: 'manifold_classification'
 
 # 2 labels training params
 # 15 - horse, 18 - balls, 25 - camel, 7 - dog1, 4 - dog2, 23 - woman, 1- man, 9- bird2, 29- bird1
-target_label: 4
-source_label: 7
+target_label: 25
+source_label: 4
+chose_target_label: True
 
-trained_only_2_classes: False # True
-train_several_classes: False # True
-classes_to_train: [4,7,15,18,25]
+trained_only_2_classes: False
+train_several_classes: True
+classes_to_train: [4,7,15,25]
 
 # Manifold params
 shift_size: 1
 non_zero_ratio: 2
 alpha: 0.5
 #'sparse_only' #'manifold_only' #'both'
-sparse_or_manifold: 'sparse_only'
-manifold_training: True
+sparse_or_manifold: 'both'
 
 # Deform Training params
 learning_weight: 0.0001
@@ -52,11 +52,11 @@ max_label_diff: 0.0001
 iterations_with_no_changes: 25
 no_change_pred_threshold: 0.0003
 pred_close_enough_to_target: 0.9
-max_iter: 150_000
+max_iter: 30_000
 iter_2_change_weight: 1_000
-show_model_every: 150_000
+show_model_every: 30_001
 
-walk_len: 200
+walk_len: 2000
 use_sphere_or_model: 'model' #'sphere' #'model'
 
 
@@ -75,12 +75,10 @@ mesh_path: 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #
 #'datasets_processed/shrec11/16-04_a/train/T437_not_changed_500.npz' #man
 
 
-#Attack params 
-loss: 'sparse_categorical_crossentropy'
-# 'sparse_categorical_crossentropy', 'kl_divergence', 'none' (for MSE)
-# add chamfer distance as an option?
-#check why sparse doesn't work
-attack: 'kl_divergence'
+#Attack params
+#'forward' - too target, 'away' - away from source, 'both' - one forward iter and one away iter, 'after' - firstly away and atfer num_iters forward
+attack_direction: 'after'
+thrs_iters_for_forward: 10_000
 sparse_alpha: 0
 kl_div_alpha: 1
 mse_alpha: 0

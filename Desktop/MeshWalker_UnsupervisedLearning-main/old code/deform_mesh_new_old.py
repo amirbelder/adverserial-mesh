@@ -22,41 +22,9 @@ import dataset
 import dataset_prepare
 import evaluate_clustering
 
-def add_spheres_as_2_balls_in_dataset(dataset_path = '', mode = 'train'):
-  # mode can be train or test and will effect the range of the loop
 
-  if dataset_path == '':
-    return
-  meshs = []
-  two_balls_idx = 18
-  classes_indices_to_use = [two_balls_idx]
-  two_balls_filenames = None
-
-  i = 0 if mode == 'train' else 16
-  max_num = 16 if mode == 'train' else 20
-
-  while i < max_num:
-    new_mesh = generate_sphere(radius=1.0+0.5*i, label=two_balls_idx)
-    meshs.append(new_mesh)
-    i+=1
-
-  filenames = dataset.get_file_names(dataset_path, [0, np.inf])
-
-  if classes_indices_to_use is not None:
-    two_balls_filenames = dataset.filter_fn_by_class(filenames, classes_indices_to_use)
-
-  if two_balls_filenames is not None:
-    for idx,file in enumerate(two_balls_filenames):
-      two_balls_mesh = np.load(file, encoding='latin1', allow_pickle=True)
-      mesh_data = {k: v for k, v in two_balls_mesh.items()}
-      mesh_data['vertices'] = meshs[idx]['vertices']
-      mesh_data['faces'] = meshs[idx]['faces']
-      np.savez(file, **mesh_data)
-
-  return
-
-def generate_sphere(radius = 1.0, label = 0):
-  sphere = trimesh.primitives.Sphere(radius = radius)
+def generate_sphere():
+  sphere = trimesh.primitives.Sphere()
   mesh = open3d.geometry.TriangleMesh()
   mesh.vertices = open3d.utility.Vector3dVector(sphere.vertices.copy())
   mesh.triangles = open3d.utility.Vector3iVector(sphere.faces.copy())
@@ -64,7 +32,7 @@ def generate_sphere(radius = 1.0, label = 0):
   vertices = np.array(mesh.vertices)
   dataset.norm_model.sub_mean_for_data_augmentation = False
   dataset.norm_model(vertices)
-  mesh = {'vertices': vertices, 'faces': np.array(mesh.triangles), 'label': label}
+  mesh = {'vertices': vertices, 'faces': np.array(mesh.triangles), 'label': 0}
   dataset_prepare.prepare_edges_and_kdtree(mesh)
 
   return mesh
@@ -147,6 +115,78 @@ def calc_ftr_vector(params, dnn_model, npz_fn):
   return feature_vector
 
 
+def get_res_path(config):
+  shrec11_labels = [
+  'armadillo',  'man',      'centaur',    'dinosaur',   'dog2',
+  'ants',       'rabbit',   'dog1',       'snake',      'bird2',
+  'shark',      'dino_ske', 'laptop',     'santa',      'flamingo',
+  'horse',      'hand',     'lamp',       'two_balls',  'gorilla',
+  'alien',      'octopus',  'cat',        'woman',      'spiders',
+  'camel',      'pliers',   'myScissor',  'glasses',    'bird1'
+  ]
+
+  #fn = npz_fn.split('/')[-1].split('.')[-2]
+  folder_name = config['trained_model'].split('/')[-1]
+  if len(folder_name) > 0:
+    res_path = '../../mesh_walker/' +folder_name +'/' + shrec11_labels[config['source_label']] + '_to_' + shrec11_labels[config['target_label']]
+  else:
+    res_path = '../../mesh_walker/'  + shrec11_labels[config['source_label']] + '_to_' + shrec11_labels[config['target_label']]
+  return res_path
+
+def get_mesh_path_500(config):
+  if config['source_label'] == 1:
+    return 'datasets_processed/shrec11/16-04_a/train/T437_not_changed_500.npz' #man
+  if config['source_label'] == 4:
+    return 'datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz' #dog2
+  if config['source_label'] == 7:
+    #return 'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz' #dog1 #orig
+    #return 'datasets_processed/shrec11/16-04_a/train/T476_not_changed_500.npz'
+    return 'datasets_processed/shrec11/16-04_a/train/T331_not_changed_500.npz'
+  if config['source_label'] == 9:
+    #return 'datasets_processed/shrec11/16-04_a/train/T520_not_changed_500.npz' #bird2
+    return 'datasets_processed/shrec11/16-04_a/train/T358_not_changed_500.npz' # bird2 upsidedown
+  if config['source_label'] == 15:
+    return 'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse
+  if config['source_label'] == 23:
+    return 'datasets_processed/shrec11/16-04_a/train/T36_not_changed_500.npz' # woman
+  if config['source_label'] == 25:
+    return 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #camel
+  if config['source_label'] == 29:
+    return 'datasets_processed/shrec11/16-04_a/train/T60_not_changed_500.npz' #bird1
+  return '../../mesh_walker/man_to_man/last_model.npz'
+  #return None
+
+
+def plot_preditions(params, dnn_model, config, mesh_data, result_path, num_iter, x_axis, source_pred_list, target_pred_list):
+  params.n_walks_per_model = 16
+  features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
+  ftrs = tf.cast(features[:, :, :3], tf.float32)
+  eight_pred = dnn_model(ftrs, classify=True, training=False)
+  sum_pred = tf.reduce_sum(eight_pred, 0)
+  print("target_label over 8 runs is: ", (sum_pred.numpy())[config['target_label']] / 16)
+  print("source_label over 8 runs is: ", (sum_pred.numpy())[config['source_label']] / 16)
+  source_pred_list.append((sum_pred.numpy())[config['source_label']] / 16)
+  target_pred_list.append((sum_pred.numpy())[config['target_label']] / 16)
+  params.n_walks_per_model = 8
+
+  if not os.path.isdir(result_path + '/plots/'):
+    os.makedirs(result_path + '/plots/')
+  # plot the predictions
+  x_axis.append(num_iter)
+
+  plt.plot(x_axis, source_pred_list)
+  plt.title(str(config['source_label']) + " to " + str(config['target_label']) + ": source pred")
+  plt.savefig(result_path + '/plots/' + 'source_pred.png')
+  plt.close()
+
+  if config['source_label'] != config['target_label']:
+    plt.plot(x_axis, target_pred_list)
+    plt.title(str(config['source_label']) + " to " + str(config['target_label']) + ": target pred")
+    plt.savefig(result_path + '/plots/' + 'target_pred.png')
+    plt.close()
+  return
+
+
 def change_one_tarj(config):
   print("change 1 traj: ", str(config['source_label']), " to ", str(config['target_label']))
   with open(config['trained_model'] + '/params.txt') as fp:
@@ -167,6 +207,8 @@ def change_one_tarj(config):
   dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, 3, model_fn,
                                    model_must_be_load=True, dump_model_visualization=False)
 
+  prec_arr = [x * 0.1 for x in range(11)]
+  was_made = [False for i in range(10)]
   result_path=get_res_path(config)
   if os.path.isdir(result_path):
       shutil.rmtree(result_path)
@@ -180,24 +222,48 @@ def change_one_tarj(config):
       mesh_path = get_mesh_path_500(config=config)
       orig_mesh_data = np.load(mesh_path, encoding='latin1', allow_pickle=True)
       mesh_data = {k: v for k, v in orig_mesh_data.items()}
+        #mesh_data['vertices'] += np.random.normal(size=mesh_data['vertices'].shape) * .02
 
     elif config['use_sphere_or_model'] == 'sphere':
       mesh_data = generate_sphere()
 
+  #utils.visualize_model(orig_mesh_data['vertices'], orig_mesh_data['faces'])
+  #utils.visualize_model(mesh_data['vertices'], mesh_data['faces'])
+
+  #target_feature_vector = calc_ftr_vector(params, dnn_model, npz_fn)
   target_feature_vector = tf.one_hot(config['target_label'], 30)
 
+  skip = int(params.seq_len / 2)
+
+  loss = []
+
+  cpos = None
   w = config['learning_weight']
+  num_iter_no_change = 0
+  last_dev_res = 0
+  last_plt_res = 0
+  skipped_iters = 0
+  res_path = get_res_path(config)
+  fields_needed = ['vertices', 'faces', 'edges', 'kdtree_query', 'label', 'labels', 'dataset_name', 'labels_fuzzy']
+  source_pred_list = []
+  target_pred_list = []
+  x_axis = []
+  # Dedining the attacks
   kl_divergence_loss = tf.keras.losses.KLDivergence()
 
   for num_iter in range(config['max_iter']):
     features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
     ftrs = tf.cast(features[:, :, :3], tf.float32)
+    v_indices = features[0, :, 3].astype(np.int)
+    gpu_tmpr = utils.get_gpu_temprature()
 
     with tf.GradientTape() as tape:
       tape.watch(ftrs)
       pred = dnn_model(ftrs, classify=True, training=False)
 
       # Produce the attack
+
+      # ftrs VS target
       sparse_attack = 0 if config['sparse_alpha'] == 0 else w * tf.keras.losses.sparse_categorical_crossentropy(config['target_label'], pred)
       kl_div_attack = 0 if config['kl_div_alpha'] == 0 else w * kl_divergence_loss(config['target_label'], pred)
       mse_attack = 0 if config['mse_alpha'] == 0 else w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
@@ -205,7 +271,10 @@ def change_one_tarj(config):
 
       attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
 
+
     gradients = tape.gradient(attack, ftrs)
+    target_pred_brfore_attack = (pred[0].numpy())[config['target_label']]
+    source_pred_brfore_attack = (pred[0].numpy())[config['source_label']]
 
     is_close_enough_to_target = (pred[0].numpy())[config['target_label']] > config['pred_close_enough_to_target']
     counter = 0
@@ -232,121 +301,6 @@ def change_one_tarj(config):
 
     print("traj took: ", counter, " iterations to change to 100%")
 
-def get_res_path(config):
-  shrec11_labels = [
-  'armadillo',  'man',      'centaur',    'dinosaur',   'dog2',
-  'ants',       'rabbit',   'dog1',       'snake',      'bird2',
-  'shark',      'dino_ske', 'laptop',     'santa',      'flamingo',
-  'horse',      'hand',     'lamp',       'two_balls',  'gorilla',
-  'alien',      'octopus',  'cat',        'woman',      'spiders',
-  'camel',      'pliers',   'myScissor',  'glasses',    'bird1'
-  ]
-
-  #fn = npz_fn.split('/')[-1].split('.')[-2]
-  folder_name = config['trained_model'].split('/')[-1]
-  if len(folder_name) > 0:
-    res_path = '../../mesh_walker/' +folder_name +'/' + shrec11_labels[config['source_label']] + '_to_' + shrec11_labels[config['target_label']]
-  else:
-    res_path = '../../mesh_walker/'  + shrec11_labels[config['source_label']] + '_to_' + shrec11_labels[config['target_label']]
-  return res_path
-
-def get_mesh_path_500(config):
-  if config['source_label'] == 1:
-    return 'datasets_processed/shrec11/16-04_a/train/T437_not_changed_500.npz' #man
-  if config['source_label'] == 4:
-    return 'datasets_processed/shrec11/16-04_a/train/T504_not_changed_500.npz' #dog2
-  if config['source_label'] == 7:
-    return 'datasets_processed/shrec11/16-04_a/train/T136_not_changed_500.npz' #dog1
-  if config['source_label'] == 9:
-    #return 'datasets_processed/shrec11/16-04_a/train/T520_not_changed_500.npz' #bird2
-    return 'datasets_processed/shrec11/16-04_a/train/T358_not_changed_500.npz' # bird2 upsidedown
-  if config['source_label'] == 15:
-    return 'datasets_processed/shrec11/16-04_a/train/T295_not_changed_500.npz' # This is a horse
-  if config['source_label'] == 23:
-    return 'datasets_processed/shrec11/16-04_a/train/T36_not_changed_500.npz' # woman
-  if config['source_label'] == 25:
-    return 'datasets_processed/shrec11/16-04_a/train/T398_not_changed_500.npz' #camel
-  if config['source_label'] == 29:
-    return 'datasets_processed/shrec11/16-04_a/train/T60_not_changed_500.npz' #bird1
-  return '../../mesh_walker/man_to_man/last_model.npz'
-  #return None
-
-
-def plot_preditions(params, dnn_model, config, mesh_data, result_path, num_iter, x_axis, source_pred_list, target_pred_list):
-  params.n_walks_per_model = 16
-  features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
-  ftrs = tf.cast(features[:, :, :3], tf.float32)
-  eight_pred = dnn_model(ftrs, classify=True, training=False)
-  sum_pred = tf.reduce_sum(eight_pred, 0)
-  print("target_label over " + str(params.n_walks_per_model) + " runs is: ", (sum_pred.numpy())[config['target_label']] / params.n_walks_per_model)
-  print("source_label over " + str(params.n_walks_per_model) + " runs is: ", (sum_pred.numpy())[config['source_label']] / params.n_walks_per_model)
-  source_pred_list.append((sum_pred.numpy())[config['source_label']] / params.n_walks_per_model)
-  target_pred_list.append((sum_pred.numpy())[config['target_label']] / params.n_walks_per_model)
-  params.n_walks_per_model = 8
-
-  if not os.path.isdir(result_path + '/plots/'):
-    os.makedirs(result_path + '/plots/')
-  # plot the predictions
-  x_axis.append(num_iter)
-
-  plt.plot(x_axis, source_pred_list)
-  plt.title(str(config['source_label']) + " to " + str(config['target_label']) + ": source pred")
-  plt.savefig(result_path + '/plots/' + 'source_pred.png')
-  plt.close()
-
-  if config['source_label'] != config['target_label']:
-    plt.plot(x_axis, target_pred_list)
-    plt.title(str(config['source_label']) + " to " + str(config['target_label']) + ": target pred")
-    plt.savefig(result_path + '/plots/' + 'target_pred.png')
-    plt.close()
-  return
-
-def set_attack(config, away_from_source_attack, forward_target_attack, num_iter):
-  """
-  Returns the attack according to the kind we need,  either away from the source or forward the target
-  """
-  if config['attack_direction'] == 'both':
-    if num_iter % 2 == 0:
-        return away_from_source_attack * -1.0
-    else:
-        return forward_target_attack
-  elif config['attack_direction'] == 'away':
-    return away_from_source_attack * -1.0
-  elif config['attack_direction'] == 'forward':
-    return forward_target_attack
-  elif config['attack_direction'] == 'after':
-    if num_iter > config['thrs_iters_for_forward']:
-      return forward_target_attack
-    else:
-      return away_from_source_attack * -1.0
-  else:
-    return 0
-
-
-def chose_target(config, dnn_model, params):
-  """
-  We will set the target to be the class with the second best prediction
-  """
-  mesh_path = get_mesh_path_500(config=config)
-  orig_mesh_data = np.load(mesh_path, encoding='latin1', allow_pickle=True)
-  mesh_data = {k: v for k, v in orig_mesh_data.items()}
-  features, labels = dataset.mesh_data_to_walk_features(mesh_data, params)
-  ftrs = tf.cast(features[:, :, :3], tf.float32)
-  pred = dnn_model(ftrs, classify=True, training=False)
-  pred = tf.reduce_sum(pred, 0)
-  pred /= params.n_walks_per_model
-  sorted_preds = np.argsort(pred)
-  # Setting the class with the second best prediction as the target
-  if config['source_label'] == sorted_preds[-1]:
-    config['target_label'] = sorted_preds[-2]
-  elif config['source_label'] == sorted_preds[-2]:
-    config['target_label'] = sorted_preds[-1]
-  else:
-    print("Bas choise of model! The source label is not one of the 2 largest predictions. Exiting")
-    exit(-1)
-  return config
-
-
 def mesh_reconstruction(config):
   with open(config['trained_model'] + '/params.txt') as fp:
     params = EasyDict(json.load(fp))
@@ -366,11 +320,8 @@ def mesh_reconstruction(config):
   dnn_model = rnn_model.RnnManifoldWalkNet(params, params.n_classes, 3, model_fn,
                                    model_must_be_load=True, dump_model_visualization=False)
 
-  if config['chose_target_label'] == True:
-    config = chose_target(config, dnn_model, params)
-
-  print("source label: ", config['source_label'], " target label: ", config['target_label'], " output dir: ", get_res_path(config))
-
+  prec_arr = [x * 0.1 for x in range(11)]
+  was_made = [False for i in range(10)]
   result_path=get_res_path(config)
   if os.path.isdir(result_path):
       shutil.rmtree(result_path)
@@ -393,9 +344,9 @@ def mesh_reconstruction(config):
   #utils.visualize_model(mesh_data['vertices'], mesh_data['faces'])
 
   #target_feature_vector = calc_ftr_vector(params, dnn_model, npz_fn)
-  target_feature_vector = tf.one_hot(indices=config['target_label'], depth=params.n_classes)
-  #return tf.one_hot(indices=labels, depth=params.n_classes)
 
+  target_feature_vector = tf.one_hot(indices=config['target_label'], depth=params.n_classes)
+  source_feature_vector = tf.one_hot(indices=config['source_label'], depth=params.n_classes)
   skip = int(params.seq_len / 2)
 
   loss = []
@@ -429,25 +380,124 @@ def mesh_reconstruction(config):
 
       # Produce the attack
 
+      # ftrs VS target
+      #sparse_attack = 0 if config['sparse_alpha'] == 0 else w * tf.keras.losses.sparse_categorical_crossentropy(config['target_label'], pred)
+      #kl_div_attack = 0 if config['kl_div_alpha'] == 0 else w * kl_divergence_loss(config['target_label'], pred)
+      #mse_attack = 0 if config['mse_alpha'] == 0 else w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
+      # No chamfer dist for now, as it's supposed to be between 2 sets of points, and not preds
+
+      #target_attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
+
+      # ftrs VS source
+      sparse_attack = 0 if config['sparse_alpha'] == 0 else w * tf.keras.losses.sparse_categorical_crossentropy(config['source_label'], pred)
+      kl_div_attack = 0 if config['kl_div_alpha'] == 0 else w * kl_divergence_loss(config['source_label'], pred)
+      mse_attack = 0 if config['mse_alpha'] == 0 else w * tf.keras.losses.mean_squared_error(source_feature_vector, pred[0])
+      # No chamfer dist for now, as it's supposed to be between 2 sets of points, and not preds
+
+      attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
+
+      #attack = -0.5 * source_attack + 0.5 * target_attack
+      #attack = source_attack
+
+      target_pred_brfore_attack = (pred[0].numpy())[config['target_label']]
+      source_pred_brfore_attack = (pred[0].numpy())[config['source_label']]
+
+      # If the right label is the target label and we got at least 95% pred,
+      # we won't change anything and will skip the iteration.
+      # That's because the part we checked already looks like we want it to.
+      if (pred[0].numpy())[config['target_label']] > config['pred_close_enough_to_target']:
+        skipped_iters += 1
+        if skipped_iters < 10:
+          print("skipped iter: ", num_iter)
+          continue
+        else:
+          skipped_iters = 0
+
+      gradients = tape.gradient(attack, ftrs)
+      ftrs_after_attack_update = ftrs - gradients
+      #ftrs_after_attack_update_neg = ftrs - gradients
+      new_pred = dnn_model(ftrs_after_attack_update, classify=True, training=False)
+      #new_pred_neg = dnn_model(ftrs_after_attack_update_neg, classify=True, training=False)
+
+      # Check to see that we didn't update too much
+      # We don't want the change to be too big, as it may result in intersections.
+      # And so, we check to see if the change caused us to get closer to the target by more than 0.01.
+      # If so, we will divide the change so it won't change more than 0.01
+      target_pred_after_attack = (new_pred[0].numpy())[config['target_label']]
+      source_pred_after_attack = (new_pred[0].numpy())[config['source_label']]
+
+      source_pred_diff = source_pred_brfore_attack - source_pred_after_attack
+      target_pred_diff = target_pred_brfore_attack - target_pred_after_attack
+
+      #if source_pred_diff < 0 or target_pred_diff >0:
+      #  print("wasn't the right direction to go")
+      #  continue
+
+      source_pred_abs_diff = abs(source_pred_brfore_attack - source_pred_after_attack)
+      target_pred_abs_diff = abs(target_pred_brfore_attack - target_pred_after_attack)
+
+      if source_pred_abs_diff > config['max_label_diff'] or target_pred_abs_diff > config['max_label_diff']:
+          ratio = config['max_label_diff'] / max(source_pred_abs_diff, target_pred_abs_diff)
+          gradients = gradients * ratio
+          # We update the gradients accordingly
+          #gradients = tape.gradient(attack, ftrs)
+
+      # Changing the weight of the attacks if it cause too much/little effect.
+
+      if source_pred_abs_diff < config['no_change_pred_threshold'] or target_pred_abs_diff < \
+              config['no_change_pred_threshold']:
+          num_iter_no_change += 1
+
+      if source_pred_abs_diff > config['no_change_pred_threshold'] or target_pred_abs_diff > config['no_change_pred_threshold']:
+        if w > 10e-3:
+          w /= 2
+
+      # Weight updates according to num of unchanged iterations
+      if num_iter_no_change > config['iterations_with_no_changes']:
+        if w * 2 < config['weight_threshold']:
+          w *= 2
+        num_iter_no_change = 0
+
+      if num_iter % config['iter_2_change_weight'] == 0:
+        if w * 10 < config['weight_threshold']:
+          w *= 10
+
+      print("iter:", num_iter, " attack:", attack.numpy(), " w:", w, " target prec:",
+            (pred[0].numpy())[config['target_label']], " source prec:", (pred[0].numpy())[config['source_label']],
+            " max label:", np.argmax(pred), " gpu_temp: ", gpu_tmpr)
+
+      loss.append(attack.numpy())
+
+      # Updating the mesh itself
+      mesh_data['vertices'][v_indices[skip:]] += gradients[0][skip:].numpy()
+
+      curr_save_image_iter = num_iter - (num_iter % config['image_save_iter'])
+      if curr_save_image_iter / config['image_save_iter'] >= last_dev_res + 1 or num_iter == 0:
+        cpos = dump_mesh(mesh_data, result_path, cpos, num_iter)
+        last_dev_res = num_iter / config['image_save_iter']
+        deform_add_fields_and_dump_model(mesh_data=mesh_data, fileds_needed=fields_needed, out_fn=result_path + '/last_model.npz')#"+ str(num_iter))
+
+      curr_plot_iter = num_iter - (num_iter % config['plot_iter'])
+      if curr_plot_iter / config['plot_iter'] >= last_plt_res + 1 or num_iter == 0:
+        plot_preditions(params, dnn_model, config, mesh_data, result_path, num_iter, x_axis, source_pred_list, target_pred_list)
+        last_plt_res = num_iter / config['plot_iter']
+
+
+      if config['show_model_every'] > 0 and num_iter % config['show_model_every'] == 0 and num_iter > 0:
+          plt.plot(loss)
+          plt.show()
+          utils.visualize_model(mesh_data['vertices'], mesh_data['faces'])
+
       sparse_attack = 0 if config['sparse_alpha'] == 0 else w * tf.keras.losses.sparse_categorical_crossentropy(config['source_label'], pred)
       kl_div_attack = 0 if config['kl_div_alpha'] == 0 else w * kl_divergence_loss(config['source_label'], pred)
       mse_attack = 0 if config['mse_alpha'] == 0 else w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
       # No chamfer dist for now, as it's supposed to be between 2 sets of points, and not preds
 
-      away_from_source_attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
-
-      sparse_attack = 0 if config['sparse_alpha'] == 0 else w * tf.keras.losses.sparse_categorical_crossentropy(config['target_label'], pred)
-      kl_div_attack = 0 if config['kl_div_alpha'] == 0 else w * kl_divergence_loss(config['target_label'], pred)
-      mse_attack = 0 if config['mse_alpha'] == 0 else w * tf.keras.losses.mean_squared_error(target_feature_vector, pred[0])
-      # No chamfer dist for now, as it's supposed to be between 2 sets of points, and not preds
-
-      forward_target_attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
-
-      attack = set_attack(config, away_from_source_attack, forward_target_attack, num_iter)
-
+      attack = config['sparse_alpha'] * sparse_attack + config['kl_div_alpha'] * kl_div_attack + config['mse_alpha'] * mse_attack
+      attack*=-1
 
     pred = tf.reduce_sum(pred, 0)
-    pred /= params.n_walks_per_model
+    pred /= 8
     target_pred_brfore_attack = (pred.numpy())[config['target_label']]
     source_pred_brfore_attack = (pred.numpy())[config['source_label']]
 
@@ -464,11 +514,11 @@ def mesh_reconstruction(config):
 
     gradients = tape.gradient(attack, ftrs)
     ftrs_after_attack_update = ftrs + gradients
-
+    ftrs_after_attack_update_neg = ftrs - gradients
     new_pred = dnn_model(ftrs_after_attack_update, classify=True, training=False)
     new_pred = tf.reduce_sum(new_pred, 0)
-    new_pred /= params.n_walks_per_model
-
+    new_pred/=8
+    new_pred_neg = dnn_model(ftrs_after_attack_update_neg, classify=True, training=False)
 
     # Check to see that we didn't update too much
     # We don't want the change to be too big, as it may result in intersections.
@@ -522,21 +572,8 @@ def mesh_reconstruction(config):
     # Updating the mesh itself
     mesh_data['vertices'][v_indices[skip:]] += gradients[0][skip:].numpy()
 
-    if num_iter % 100 == 0:
-      preds_to_print_str = ''
-      # arange the idx of the predctions from lowest to highest
-      sorted_preds = np.argsort(pred)
-
-      #print the best 4 predictions
-      for i in range(4):
-        label = sorted_preds[-i -1]
-        preds_to_print_str += ' pred label ' + str(label) + ': ' + str((pred.numpy())[label])
-
-      print('\n' +'attack direction: ' + config['attack_direction'] + '\n' + preds_to_print_str + '\n')
-
     curr_save_image_iter = num_iter - (num_iter % config['image_save_iter'])
     if curr_save_image_iter / config['image_save_iter'] >= last_dev_res + 1 or num_iter == 0:
-      print(result_path)
       cpos = dump_mesh(mesh_data, result_path, cpos, num_iter)
       last_dev_res = num_iter / config['image_save_iter']
       deform_add_fields_and_dump_model(mesh_data=mesh_data, fileds_needed=fields_needed, out_fn=result_path + '/last_model.npz')#"+ str(num_iter))
@@ -573,7 +610,7 @@ def check_model_accuracy():
   return
 
 def loop_over_mesh_recon():
-  networks = os.listdir('../../mesh_walker/runs_aug_360_must/0000_important_runs')
+  networks = os.listdir('../../../mesh_walker/runs_aug_360_must/0000_important_runs')
   return
 
 def main():
@@ -587,12 +624,11 @@ def main():
   config = utils.get_config(opts.config)
 
   #check_model_accuracy()
+  print("source label: ", config['source_label'], " target label: ", config['target_label'], " output dir: ", get_res_path(config))
   mesh_reconstruction(config)
   #change_one_tarj(config)
 
   return 0
 
 if __name__ == '__main__':
-  #for mode in ['train', 'test']:
-  #  add_spheres_as_2_balls_in_dataset(dataset_path='datasets_processed/shrec11/16-04_a_changed/' + mode + '/*', mode=mode)
   main()

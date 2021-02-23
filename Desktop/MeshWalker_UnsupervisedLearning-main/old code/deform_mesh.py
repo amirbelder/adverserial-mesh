@@ -168,7 +168,7 @@ def mesh_reconstruction(config):
   dataset.mesh_data_to_walk_features.SET_SEED_WALK = False
 
 
-  dnn_model = rnn_model.RnnWalkNet(params, params.n_classes, 3, model_fn,
+  dnn_model = rnn_model.RnnManifoldWalkNet(params, params.n_classes, 3, model_fn,
                                    model_must_be_load=True, dump_model_visualization=False)
 
   prec_arr = [x * 0.1 for x in range(11)]
@@ -316,7 +316,7 @@ def check_model_accuracy():
 
 def main():
   np.random.seed(0)
-  utils.config_gpu(1, -1)
+  utils.config_gpu(1, 0)
 
   #get hyper params from yaml
   parser = argparse.ArgumentParser()

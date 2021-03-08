@@ -41,15 +41,17 @@ def find_meshes_idx(config=None):
   for id in idx:
     mesh_path = ([file for file in all_files if file.__contains__('_'+str(id)+'_')])[0]
     meshes_paths.append('datasets_processed/shrec11/' + mesh_path)
-  return meshes_paths
+  return meshes_paths, idx
 
 
 def change_several_meshes(config=None):
   if config is None:
     return
-  paths_to_source_test_meshes = find_meshes_idx(config=config)
-  for path in paths_to_source_test_meshes:
-    deform_mesh_new.mesh_reconstruction(config=config, source_mesh=path)
+  paths_to_source_test_meshes, idx = find_meshes_idx(config=config)
+  for path,id in zip(paths_to_source_test_meshes, idx):
+    if str(id).__contains__('454'):
+      continue
+    deform_mesh_new.mesh_reconstruction(config=config, source_mesh=path, id = id)
   return paths_to_source_test_meshes
 
 

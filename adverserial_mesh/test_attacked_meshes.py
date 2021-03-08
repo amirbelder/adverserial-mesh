@@ -10,7 +10,7 @@ def add_adverserial_examples(dataset):
     #dataset.dataset.paths = []
     return
 
-def run_test(epoch=-1, vertices = None, faces= None, label= None):
+def run_test(epoch=-1, vertices = None, faces= None, label= None, attack = False):
     print('Running Test')
     opt = TestOptions().parse()
     opt.serial_batches = True  # no shuffle
@@ -20,10 +20,11 @@ def run_test(epoch=-1, vertices = None, faces= None, label= None):
     # test
     writer.reset_counter()
     for i, data in enumerate(dataset):
-        data = {}
-        data['mesh'] = mesh_prepare.rebuild_mesh(vertices, faces)
-        data['label'] = label
-        data['edge_features'] = data['mesh'].features
+        if i==4 and attack == True:
+            for i in range(4):
+                attacked_data = mesh_prepare.rebuild_mesh(vertices, faces)
+                #data['label'][0] = label
+                data['edge_features'][-i-1] = attacked_data.features# data['mesh'][0].features
         model.set_input(data)
         ncorrect, nexamples = model.test()
         writer.update_counter(ncorrect, nexamples)
@@ -33,13 +34,13 @@ def run_test(epoch=-1, vertices = None, faces= None, label= None):
 
 def extract_data_of_attacked_meshes(path_to_walker_meshes):
     paths = os.listdir(path_to_walker_meshes)
-    paths_to_meshes = [path for path in paths if path.__contains__('attack')]
+    paths_to_meshes = [path for path in paths if path.__contains__('_attacked')]
 
     for mesh_path in paths_to_meshes:
-      orig_mesh_data = np.load(mesh_path, encoding='latin1', allow_pickle=True)
+      orig_mesh_data = np.load(path_to_walker_meshes + mesh_path, encoding='latin1', allow_pickle=True)
       attacked_mesh_data = {k: v for k, v in orig_mesh_data.items()}
       vertices, faces, label = attacked_mesh_data['vertices'], attacked_mesh_data['faces'], attacked_mesh_data['label']
-      run_test(vertices=vertices, faces=faces, label=label)
+      run_test(vertices=vertices, faces=faces, label=label, attack=True)
 
 if __name__ == '__main__':
-    run_test()
+    extract_data_of_attacked_meshes(path_to_walker_meshes = 'datasets_processed/shrec11/')
